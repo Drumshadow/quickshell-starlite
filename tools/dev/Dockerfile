@@ -11,7 +11,7 @@ RUN dnf -y install --setopt=install_weak_deps=False \
       mesa-dri-drivers mesa-libEGL mesa-libGL \
       qt6-qtbase qt6-qtdeclarative qt6-qtwayland qt6-qtsvg \
       google-noto-sans-fonts google-noto-sans-mono-fonts \
-      procps-ng findutils jq \
+      procps-ng findutils jq wtype \
  && dnf clean all
 
 # Fedora ships sway with cap_sys_nice=ep. Docker strips file capabilities, and
@@ -33,4 +33,12 @@ ENV LIBGL_ALWAYS_SOFTWARE=1 \
     QT_QPA_PLATFORM=wayland
 
 RUN mkdir -p /tmp/xdg && chmod 700 /tmp/xdg
+# A launchable app that leaves evidence, so "the application actually started"
+# can be asserted rather than eyeballed.
+RUN mkdir -p /usr/share/applications && \
+    printf '[Desktop Entry]\nType=Application\nName=SliceProbe\nExec=/usr/local/bin/slice-probe\nTerminal=false\n' \
+      > /usr/share/applications/slice-probe.desktop && \
+    printf '#!/bin/sh\ndate -Is > /tmp/slice-launched\nsleep 30\n' > /usr/local/bin/slice-probe && \
+    chmod +x /usr/local/bin/slice-probe
+
 WORKDIR /shell

@@ -134,3 +134,23 @@ deliberately-broken fixtures. It needs no container and runs before each headles
 
 Not catchable statically: §5 (array binding not re-evaluating) and §8 (`console.log` routing) —
 both need the thing running.
+
+## 12. What a headless container cannot test: input delivery
+
+The vertical slice drives everything through IPC rather than synthetic input, because
+**pointer and keyboard events cannot be delivered in this environment at all**:
+
+- A headless wlroots seat has no devices, so it advertises `capabilities: 0`. Clients never
+  create a `wl_keyboard`/`wl_pointer`, so nothing can receive events. `swaymsg seat - cursor`
+  returns `success: true` and delivers nothing; `wtype` runs without error and types nothing.
+- `WLR_BACKENDS=headless,libinput` fails: libinput needs a **logind seat**, which a container
+  does not have (`libseat: No backend was able to open a seat`).
+- The only remaining route is mounting the **host's** `/dev/input` and injecting real events
+  into the developer's own machine. That is out of scope by design.
+
+**So event delivery is a hardware check**, alongside the OSK probe. Everything up to delivery —
+state transitions, geometry, mask, focus policy, service reactions, search, launching — is
+covered by `tools/dev/slice-test.sh`.
+
+The island's IPC exposes `type`, `activate` and `results` for exactly this reason: they let the
+launcher be driven without an input device, testing every step except the event itself.

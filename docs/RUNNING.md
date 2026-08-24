@@ -51,6 +51,23 @@ Each run prints Quickshell's log (QML errors included) and writes a PNG to `tool
 Presets: `laptop` · `tablet` · `tablet-portrait` · `low-battery` · `charging` · `at-cap` ·
 `offline`.
 
+## Vertical slice test
+
+```bash
+tools/dev/slice-test.sh
+```
+
+Drives the whole path — startup → island renders → expand → volume/brightness OSD →
+auto-dismiss → launcher opens → query filters → **application actually launches** → OSK
+affordance follows `InputMode` — asserting each step and writing screenshots to
+`tools/dev/out/slice/`. 13 assertions, exits non-zero on any failure.
+
+The application launch is real: the container ships a `SliceProbe` desktop entry whose binary
+writes `/tmp/slice-launched`, so "it started" is asserted rather than eyeballed.
+
+**Not covered:** real pointer/keyboard *delivery* — see `QUICKSHELL-NOTES.md` §12. A headless
+seat has no input capabilities, and the only workaround would inject events into the host.
+
 ## On a machine that has a Wayland session
 
 ```bash

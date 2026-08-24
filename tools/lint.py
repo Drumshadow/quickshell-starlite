@@ -92,7 +92,7 @@ for path in qml_files():
 
         # QS010 — service boundary
         if re.search(r"\bMock\.", ln) and (os.sep + "Services" + os.sep) not in path \
-           and (os.sep + "dev" + os.sep) not in path and not path.endswith("dev-shell.qml"):
+           and (os.sep + "dev" + os.sep) not in path and os.path.basename(path) not in ("dev-shell.qml", "slice.qml"):
             add("QS010", path, i, "UI must read a service, never Mock directly")
 
         # QS011 — device assumptions in generic components
