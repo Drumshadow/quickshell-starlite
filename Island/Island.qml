@@ -67,6 +67,19 @@ PanelWindow {
         function close(): void { IslandState.release() }
         function state(): string { return IslandState.current }
 
+        // Service health — proves real mode degrades honestly rather than
+        // pretending, when a daemon is absent.
+        function health(): string {
+            return "mock=" + Sys.Env.mock
+                 + " audio=" + Sys.Audio.available
+                 + " power=" + Sys.Power.available
+                 + " media=" + Sys.Media.available
+                 + " net="   + Sys.Network.available
+                 + " | vol=" + Sys.Audio.volume.toFixed(2)
+                 + " bat=" + Sys.Power.percentage + "/" + Sys.Power.state
+                 + " net=" + Sys.Network.type
+        }
+
         // Drive the launcher without synthetic input. A headless container has
         // no logind seat, so the compositor advertises no input capabilities and
         // no client can receive pointer/keyboard events at all. The only way to
