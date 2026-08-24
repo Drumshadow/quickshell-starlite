@@ -7,12 +7,15 @@ import QtQuick
 QtObject {
     id: root
 
-    // ---- raw inputs (replaced by the wallust-generated file, theming §1) ----
-    property color background: "#0b100e"
-    property color foreground: "#e9f2ef"
-    property color accentIn:   "#14b88f"
-    property color criticalIn: "#e5534b"
-    property color successIn:  "#3fb950"
+    // ---- raw inputs ----
+    // Sourced from the palette registry today; wallust replaces this with a
+    // generated file later (docs/quickshell-theming.md §1). Either way it is
+    // FOUR colours in, and everything else derives.
+    readonly property color background: Themes.active.bg
+    readonly property color foreground: Themes.active.fg
+    readonly property color accentIn:   Themes.active.accent
+    readonly property color criticalIn: Themes.active.critical
+    readonly property color successIn:  Themes.active.success
 
     // ---- colour maths ----
     function _lin(v) { return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4) }

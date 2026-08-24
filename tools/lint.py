@@ -82,7 +82,7 @@ for path in qml_files():
             add("QS007", path, i, "derive a bool/number with a function, then build the colour with Qt.tint/Qt.rgba")
 
         # QS008 — colour literals outside the token file
-        if not path.endswith(os.path.join("Config", "Tokens.qml")):
+        if os.path.basename(path) not in ("Tokens.qml", "Themes.qml"):
             if re.search(r'"#[0-9a-fA-F]{3,8}"', rawlines[i-1]) and "qmldir" not in path:
                 add("QS008", path, i, "colours belong in Config/Tokens.qml so every theme works")
 

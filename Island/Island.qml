@@ -69,6 +69,15 @@ PanelWindow {
 
         // Service health — proves real mode degrades honestly rather than
         // pretending, when a daemon is absent.
+        function theme(id: string): void { Themes.set(id) }
+        function themes(): string { return Themes.names() + " | current=" + Themes.current }
+        function contrast(): string {
+            return "ink=" + Tokens.cOnSurface.toFixed(2)
+                 + " dim=" + Tokens.cOnSurfaceDim.toFixed(2)
+                 + " onAccent=" + Tokens.cOnAccent.toFixed(2)
+                 + " isDark=" + Tokens.isDark
+        }
+
         function health(): string {
             return "mock=" + Sys.Env.mock
                  + " audio=" + Sys.Audio.available
@@ -124,6 +133,7 @@ PanelWindow {
                 case "osd":      return "OsdContent.qml"
                 case "launcher": return "LauncherContent.qml"
                 case "control":  return "ControlContent.qml"
+                case "theme":    return "ThemeContent.qml"
                 default:         return "RestContent.qml"
                 }
             }
