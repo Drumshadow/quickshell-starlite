@@ -1,0 +1,5 @@
+module Island
+singleton IslandState 1.0 IslandState.qml
+Island 1.0 Island.qml
+RestContent 1.0 RestContent.qml
+ExpandedContent 1.0 ExpandedContent.qml

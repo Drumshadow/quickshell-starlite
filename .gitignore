@@ -1,0 +1,6 @@
+# day-one-check.sh and the probe write timestamped logs
+day-one-*.log
+tools/osk-probe/probe-*.log
+tools/osk-probe/frames/
+*.qmlc
+*.jsc
