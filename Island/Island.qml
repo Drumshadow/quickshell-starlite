@@ -123,6 +123,7 @@ PanelWindow {
                 case "expanded": return "ExpandedContent.qml"
                 case "osd":      return "OsdContent.qml"
                 case "launcher": return "LauncherContent.qml"
+                case "control":  return "ControlContent.qml"
                 default:         return "RestContent.qml"
                 }
             }
@@ -134,6 +135,8 @@ PanelWindow {
                     // field inside it must take ACTIVE focus or keystrokes go nowhere
                     if (item.focusInput) item.focusInput()
                 }
+                if (IslandState.current === "control" && item)
+                    item.navigate.connect(function (s) { IslandState.request(s) })
             }
         }
 
