@@ -2,3 +2,5 @@ singleton IslandState 1.0 IslandState.qml
 Island 1.0 Island.qml
 RestContent 1.0 RestContent.qml
 ExpandedContent 1.0 ExpandedContent.qml
+OsdContent 1.0 OsdContent.qml
+LauncherContent 1.0 LauncherContent.qml

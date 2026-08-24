@@ -10,3 +10,4 @@ singleton Bluetooth 1.0 Bluetooth.qml
 singleton Media 1.0 Media.qml
 singleton Notifications 1.0 Notifications.qml
 singleton Session 1.0 Session.qml
+singleton Apps 1.0 Apps.qml
