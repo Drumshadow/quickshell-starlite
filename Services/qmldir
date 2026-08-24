@@ -11,3 +11,5 @@ singleton Media 1.0 Media.qml
 singleton Notifications 1.0 Notifications.qml
 singleton Session 1.0 Session.qml
 singleton Apps 1.0 Apps.qml
+singleton Tray 1.0 Tray.qml
+singleton Wallpaper 1.0 Wallpaper.qml

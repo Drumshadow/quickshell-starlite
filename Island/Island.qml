@@ -70,6 +70,17 @@ PanelWindow {
         // Service health — proves real mode degrades honestly rather than
         // pretending, when a daemon is absent.
         function theme(id: string): void { Themes.set(id) }
+
+        // Drive the power menu so the arm-to-confirm floor can be tested. The
+        // mock Session never actually acts; it records lastAction.
+        function powerPress(id: string): void {
+            if (IslandState.current === "power" && loader.item)
+                loader.item.press(id, id !== "lock" && id !== "suspend")
+        }
+        function powerArmed(): string {
+            return (IslandState.current === "power" && loader.item) ? loader.item.armed : ""
+        }
+        function lastAction(): string { return Sys.Session.lastAction }
         function themes(): string { return Themes.names() + " | current=" + Themes.current }
         function contrast(): string {
             return "ink=" + Tokens.cOnSurface.toFixed(2)
@@ -84,6 +95,7 @@ PanelWindow {
                  + " power=" + Sys.Power.available
                  + " media=" + Sys.Media.available
                  + " net="   + Sys.Network.available
+                 + " tray="  + Sys.Tray.count
                  + " | vol=" + Sys.Audio.volume.toFixed(2)
                  + " bat=" + Sys.Power.percentage + "/" + Sys.Power.state
                  + " net=" + Sys.Network.type
@@ -134,6 +146,9 @@ PanelWindow {
                 case "launcher": return "LauncherContent.qml"
                 case "control":  return "ControlContent.qml"
                 case "theme":    return "ThemeContent.qml"
+                case "power":    return "PowerContent.qml"
+                case "settings": return "SettingsContent.qml"
+                case "wallpaper": return "WallpaperContent.qml"
                 default:         return "RestContent.qml"
                 }
             }
@@ -145,7 +160,7 @@ PanelWindow {
                     // field inside it must take ACTIVE focus or keystrokes go nowhere
                     if (item.focusInput) item.focusInput()
                 }
-                if (IslandState.current === "control" && item)
+                if ((IslandState.current === "control" || IslandState.current === "settings") && item)
                     item.navigate.connect(function (s) { IslandState.request(s) })
             }
         }

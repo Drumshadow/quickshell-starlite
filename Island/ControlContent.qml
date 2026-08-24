@@ -150,6 +150,39 @@ Item {
                 }
             }
 
+            // tray row: icons only, collapses to nothing when empty so it costs
+            // nothing until something registers
+            Flow {
+                width: parent.width
+                spacing: Sys.InputMode.gutter
+                visible: Sys.Tray.count > 0
+                Repeater {
+                    model: Sys.Tray.items
+                    delegate: Rectangle {
+                        required property var modelData
+                        width: Sys.InputMode.touchTarget
+                        height: Sys.InputMode.touchTarget
+                        radius: Tokens.radius
+                        color: tma.pressed ? Tokens.surfaceVariant : "transparent"
+                        Image {
+                            anchors.centerIn: parent
+                            width: 20; height: 20
+                            source: modelData.icon
+                            sourceSize.width: 20; sourceSize.height: 20
+                            asynchronous: true
+                            // tray icons belong to the applications: never recolour
+                            // them, an unrecognisable tray icon defeats the point
+                        }
+                        MouseArea {
+                            id: tma
+                            anchors.fill: parent
+                            onClicked: Sys.Tray.activate(modelData)
+                            onPressAndHold: Sys.Tray.menu(modelData)
+                        }
+                    }
+                }
+            }
+
             Rectangle { width: parent.width; height: 1; color: Tokens.outline }
 
             // FOOTER: navigation, deliberately NOT tiles. This is how theme,
