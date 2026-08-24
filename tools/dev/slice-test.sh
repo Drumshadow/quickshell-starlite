@@ -101,6 +101,50 @@ case "$M" in *"osk=true"*"touchTarget=48"*|*"touchTarget=48"*"osk=true"*) ok "ta
 qs -p /shell/slice.qml ipc call island toggle launcher >/dev/null 2>&1; sleep 1
 shot 09-launcher-tablet
 
+step 10 "Control centre renders and the footer navigates"
+qs -p /shell/slice.qml ipc call island toggle control >/dev/null 2>&1; sleep 1.2
+S=$(qs -p /shell/slice.qml ipc call island state 2>/dev/null)
+[ "$S" = "control" ] && ok "control centre open" || no "expected control, got $S"
+shot 10-control
+H=$(qs -p /shell/slice.qml ipc call island health 2>/dev/null); echo "   $H"
+case "$H" in *"mock=true"*) ok "services reporting through the mock boundary";; *) no "$H";; esac
+
+step 11 "Every theme passes the contrast audit"
+BAD=0
+for t in ariadne e-ink tokyo-night rose-pine gruvbox nord; do
+  qs -p /shell/slice.qml ipc call island theme $t >/dev/null 2>&1; sleep 0.35
+  C=$(qs -p /shell/slice.qml ipc call island contrast 2>/dev/null)
+  echo "   $t: $C"
+  V=$(echo "$C" | sed -n "s/.*ink=\([0-9.]*\).*/\1/p")
+  awk -v v="$V" "BEGIN{exit !(v>=4.5)}" || { BAD=$((BAD+1)); }
+done
+[ "$BAD" -eq 0 ] && ok "all six themes legible (incl. the light one)" || no "$BAD theme(s) below 4.5:1"
+qs -p /shell/slice.qml ipc call island theme ariadne >/dev/null 2>&1
+
+step 12 "Power menu arm-to-confirm, including the touch double-tap floor"
+qs -p /shell/slice.qml ipc call island open power >/dev/null 2>&1; sleep 1
+qs -p /shell/slice.qml ipc call island powerPress lock >/dev/null 2>&1; sleep 0.4
+A=$(qs -p /shell/slice.qml ipc call island lastAction 2>/dev/null)
+[ "$A" = "lock" ] && ok "safe action fires on a single press" || no "lock did not fire (got: $A)"
+
+qs -p /shell/slice.qml ipc call island powerPress poweroff >/dev/null 2>&1; sleep 0.15
+ARM=$(qs -p /shell/slice.qml ipc call island powerArmed 2>/dev/null)
+A=$(qs -p /shell/slice.qml ipc call island lastAction 2>/dev/null)
+[ "$ARM" = "poweroff" ] && ok "destructive action armed, did not fire" || no "not armed (got: $ARM)"
+[ "$A" = "lock" ] && ok "still no poweroff after first press" || no "poweroff fired early! (lastAction=$A)"
+shot 12-power-armed
+
+# second press INSIDE the 400ms floor must be ignored — this is the whole point
+qs -p /shell/slice.qml ipc call island powerPress poweroff >/dev/null 2>&1
+A=$(qs -p /shell/slice.qml ipc call island lastAction 2>/dev/null)
+[ "$A" = "lock" ] && ok "fast double-tap did NOT fire poweroff (400ms floor holds)" \
+                  || no "DOUBLE-TAP DEFEATED THE CONFIRM GATE (lastAction=$A)"
+
+sleep 0.6
+qs -p /shell/slice.qml ipc call island powerPress poweroff >/dev/null 2>&1; sleep 0.3
+A=$(qs -p /shell/slice.qml ipc call island lastAction 2>/dev/null)
+[ "$A" = "poweroff" ] && ok "deliberate second press fires" || no "expected poweroff, got $A"
+
 printf "\n=== slice: %d passed, %d failed ===\n" "$PASS" "$FAIL"
 pkill -f "qs -p" 2>/dev/null
 [ "$FAIL" -eq 0 ]
