@@ -115,3 +115,22 @@ for diagnosing binding problems.
 Fedora ships `sway` with `cap_sys_nice=ep`. Docker strips file capabilities and the kernel then
 refuses to exec the binary at all (`Operation not permitted`). `cp` does not preserve caps, so
 the Dockerfile copies sway to a capability-free path — avoiding `--privileged`.
+
+## 11. Which of these a linter can catch
+
+`tools/lint.py` encodes every mechanically-detectable rule above, validated against
+deliberately-broken fixtures. It needs no container and runs before each headless render.
+
+| Rule | Catches |
+|---|---|
+| QS001 | `on` + Uppercase property names (§3) |
+| QS002 | `;` after an inline nested object (§6) |
+| QS003 | qmldir drift — unlisted files, missing files, `module` lines (§1) |
+| QS004 | `ShellRoot` outside the repo root (§2) |
+| QS005 | duplicate type names across qmldirs, and QtQuick built-in shadowing (§7) |
+| QS006 | unbalanced braces |
+| QS007 | colour-returning helper inside a property binding (§4) |
+| QS008–QS011 | architectural drift: colour literals outside `Tokens`, `Process` outside `Services/`, UI touching `Mock`, hardcoded `48` |
+
+Not catchable statically: §5 (array binding not re-evaluating) and §8 (`console.log` routing) —
+both need the thing running.

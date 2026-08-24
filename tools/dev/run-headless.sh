@@ -11,6 +11,14 @@ WAIT="${2:-6}"
 MOCK="${3:-}"
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 OUT="$REPO/tools/dev/out"; mkdir -p "$OUT"
+
+# Static checks first — they take milliseconds and catch the mechanical
+# failures (qmldir drift, on+Uppercase properties, stray semicolons) that would
+# otherwise cost a container start and a confusing runtime error.
+if ! "$REPO/tools/lint.py"; then
+  echo "lint failed — fix the errors above before rendering" >&2
+  exit 1
+fi
 NAME="$(basename "$CFG" .qml)-$(date +%H%M%S)"
 [ "$MOCK" = "--mock" ] && QSMOCK=1 || QSMOCK=0
 

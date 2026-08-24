@@ -14,6 +14,22 @@ Inside it, a **headless wlroots compositor (sway)** provides `wlr-layer-shell` �
 protocol KWin implements on the target — so layer-shell surfaces can be rendered and
 screenshotted with no display.
 
+## Lint first
+
+```bash
+tools/lint.py           # static checks, no container needed
+tools/lint.py --list    # the rules
+```
+
+Every rule corresponds to something that actually broke this codebase at runtime
+(`QUICKSHELL-NOTES.md`) or to an architectural boundary we keep on purpose. Three of the nine
+runtime bugs were mechanically detectable; this is that grep. It runs automatically before
+every headless render.
+
+`ERROR` means it will break at runtime. `WARN` means architectural drift — a colour literal
+outside `Tokens`, a hardcoded `48` instead of `InputMode.touchTarget`, UI reaching for `Mock`
+directly, or a `Process` outside `Services/`.
+
 ## Build once
 
 ```bash

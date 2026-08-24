@@ -14,6 +14,7 @@ Scaffold for the shell specced in `~/specs/quickshell-*.md`.
 ## Quick start
 
 ```bash
+tools/lint.py                            # static checks, no container needed
 docker build -t quickshell-starlite-dev -f tools/dev/Dockerfile tools/dev
 tools/dev/run-mock.sh                    # mocked shell + interactive control panel
 tools/dev/run-headless.sh gallery.qml    # icons + live contrast audit
@@ -35,6 +36,7 @@ QS_PRESET=tablet tools/dev/run-mock.sh   # tablet posture
 | `Services/*.qml` | service layer | **The system boundary.** UI reads these; they read real backends or `Mock` |
 | `dev-shell.qml`, `dev/MockPanel.qml` | — | **Runs.** Mocked shell with interactive controls |
 | `tools/dev/` | — | Fedora 44 container + headless compositor + screenshot harness |
+| `tools/lint.py` | — | 11 static checks, each from a bug that actually bit; runs before every render |
 
 ## Not yet written
 Everything from build-order Phase 4 on: launcher, control centre, notifications, OSD
