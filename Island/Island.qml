@@ -1,22 +1,23 @@
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Wayland
 import "../Config"
+import "../Services" as Sys
 
-// island-core §2. ONE surface, full-width, mapped for the life of the session.
+// ONE surface, full-width, mapped for the life of the session.
 //
-//   * `visible` is NEVER set false anywhere in this shell (KWin bug 503121).
-//   * Anchoring full width keeps surface geometry stable, gives the full
-//     top-edge input strip reachability needs, and lets the drawn island
-//     resize freely.
-//   * The mask is what makes a full-width surface tolerable — it MUST be
-//     recomputed on every state change or the top of the desktop silently
-//     stops responding.
+//  * `visible` is NEVER set false anywhere (KWin bug 503121).
+//  * Full-width anchoring keeps surface geometry stable, supplies the top-edge
+//    input strip, and lets the drawn island resize freely.
+//  * The mask is what makes a full-width surface tolerable, and it MUST track
+//    the drawn island or the top of the desktop silently stops responding.
 PanelWindow {
     id: win
     anchors { top: true; left: true; right: true }
     exclusiveZone: 0
     color: "transparent"
+    implicitHeight: 560
 
     WlrLayershell.namespace: "island"
     WlrLayershell.layer: WlrLayer.Overlay
@@ -25,57 +26,144 @@ PanelWindow {
             ? WlrKeyboardFocus.Exclusive
             : WlrKeyboardFocus.None
 
-    // tall enough for the largest state; the mask keeps it click-through
-    implicitHeight: 520
+    // ---- OSD: event-driven from the services, not from a keypress ----------
+    // Bind to the VALUE so it works for every source of change, not only ours
+    // (docs/quickshell-osd.md §2). `_armed` is the suppression list: no OSD on
+    // startup or first binding (§8).
+    property bool _armed: false
+    Timer { interval: 900; running: true; repeat: false; onTriggered: win._armed = true }
 
-    // ---- the drawn island -------------------------------------------------
+    Connections {
+        target: Sys.Audio
+        function onVolumeChanged() { win._showOsd("volume") }
+        function onMutedChanged()  { win._showOsd("volume") }
+    }
+    Connections {
+        target: Sys.Backlight
+        function onValueChanged() { win._showOsd("brightness") }
+    }
+
+    property string osdKind: "volume"
+    function _showOsd(kind) {
+        if (!win._armed) return
+        // transients never interrupt a user panel (island-core §3)
+        if (IslandState.prio(IslandState.current) >= 2) return
+        win.osdKind = kind
+        IslandState.request("osd")
+        osdTimer.restart()
+    }
+    Timer {
+        id: osdTimer
+        interval: 2500          // raised from the source's ~1.5s: on a tablet you
+        repeat: false           // are less likely to be watching the top edge
+        onTriggered: if (IslandState.current === "osd") IslandState.release()
+    }
+
+    // ---- IPC: one target, per island-core §9 -------------------------------
+    IpcHandler {
+        target: "island"
+        function open(state: string): void  { IslandState.request(state) }
+        function toggle(state: string): void { IslandState.toggle(state) }
+        function close(): void { IslandState.release() }
+        function state(): string { return IslandState.current }
+
+        // Drive the launcher without synthetic input. A headless container has
+        // no logind seat, so the compositor advertises no input capabilities and
+        // no client can receive pointer/keyboard events at all. The only way to
+        // change that is to mount the HOST's /dev/input, which would inject real
+        // events into the developer's machine — not acceptable. These hooks test
+        // everything except event delivery; delivery itself is a hardware check.
+        function type(text: string): void {
+            if (IslandState.current === "launcher" && loader.item) loader.item.query = text
+        }
+        function activate(): void {
+            if (IslandState.current === "launcher" && loader.item) loader.item.activate()
+        }
+        function results(): string {
+            if (IslandState.current !== "launcher" || !loader.item) return ""
+            var r = loader.item.results, out = []
+            for (var i = 0; i < r.length; i++) out.push(r[i].name)
+            return out.join(",")
+        }
+    }
+
+    // ---- the drawn island --------------------------------------------------
     Rectangle {
         id: island
         anchors.horizontalCenter: parent.horizontalCenter
         y: 8
-        radius: height / 2 > Tokens.radius * 2 ? Tokens.radius * 1.6 : height / 2
+        radius: Math.min(height / 2, Tokens.radius * 1.8)
         color: Tokens.surface
+        implicitWidth:  loader.item ? loader.item.implicitWidth  + Tokens.fontSize * 1.4 : 90
+        implicitHeight: loader.item ? loader.item.implicitHeight + Tokens.fontSize * 0.5 : Settings.barHeight
+        width: implicitWidth
+        height: implicitHeight
 
-        // geometry animates; content cross-fades — driven together (island-core §5)
-        implicitWidth:  content.implicitWidth
-        implicitHeight: content.implicitHeight
-        Behavior on implicitWidth  { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
-        Behavior on implicitHeight { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
+        Behavior on width  { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+        Behavior on height { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
 
-        Item {
-            id: content
+        Loader {
+            id: loader
             anchors.centerIn: parent
-            // per-state content loaders go here; sized by the active one
-            implicitWidth:  loader.item ? loader.item.implicitWidth  : 90
-            implicitHeight: loader.item ? loader.item.implicitHeight : Settings.barHeight
-
-            Loader {
-                id: loader
-                anchors.centerIn: parent
-                asynchronous: false
-                source: {
-                    switch (IslandState.current) {
-                    case "rest":     return "RestContent.qml"
-                    case "expanded": return "ExpandedContent.qml"
-                    default:         return "RestContent.qml"   // TODO: other states
-                    }
+            source: {
+                switch (IslandState.current) {
+                case "expanded": return "ExpandedContent.qml"
+                case "osd":      return "OsdContent.qml"
+                case "launcher": return "LauncherContent.qml"
+                default:         return "RestContent.qml"
                 }
-                opacity: 1
-                Behavior on opacity { NumberAnimation { duration: 140 } }
             }
+            onLoaded: {
+                if (IslandState.current === "osd" && item) item.kind = win.osdKind
+                if (IslandState.current === "launcher" && item) {
+                    item.launched.connect(function () { IslandState.release() })
+                    // a layer surface having keyboard focus is not enough — the
+                    // field inside it must take ACTIVE focus or keystrokes go nowhere
+                    if (item.focusInput) item.focusInput()
+                }
+            }
+        }
+
+        // tap the pill to expand; tap again to collapse
+        MouseArea {
+            anchors.fill: parent
+            enabled: IslandState.current === "rest" || IslandState.current === "expanded"
+            onClicked: IslandState.toggle("expanded")
         }
     }
 
-    // ---- the top-edge gesture strip (island-core §2.3, §8) ----------------
+    // full-width strip: the summon gesture target, reachable from any top corner
     Item {
         id: topStrip
         anchors { top: parent.top; left: parent.left; right: parent.right }
         height: 20
     }
 
-    // ---- input mask: island + strip only; everything else passes through --
+    // tap-outside dismiss, only while a panel is open — never swallows clicks at rest
+    MouseArea {
+        anchors.fill: parent
+        z: -1
+        enabled: win.panelOpen && IslandState.current !== "auth"
+        onClicked: IslandState.release()
+    }
+
+    // ---- input mask --------------------------------------------------------
+    // Recomputed whenever the island resizes or the state changes; when a panel
+    // is open the whole surface is live so tap-outside works.
+    // NOTE: `Region { item: null }` silently disables the ENTIRE mask, so the
+    // surface accepts no input at all. Use explicit geometry instead.
+    readonly property bool panelOpen: IslandState.prio(IslandState.current) >= 2
+
     mask: Region {
-        Region { item: island }
-        Region { item: topStrip }
+        // the island itself — or the whole surface while a panel is open, so
+        // tap-outside can dismiss it
+        Region {
+            x: win.panelOpen ? 0 : island.x
+            y: win.panelOpen ? 0 : island.y
+            width:  win.panelOpen ? win.width  : island.width
+            height: win.panelOpen ? win.height : island.height
+        }
+        // top-edge summon strip, always live
+        Region { x: 0; y: 0; width: win.width; height: 20 }
     }
 }
