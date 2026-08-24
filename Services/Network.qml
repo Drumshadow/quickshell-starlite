@@ -12,9 +12,10 @@ QtObject {
     readonly property int strength:   Env.mock ? Mock.wifiStrength  : quantise(_realStrengthRaw)
     readonly property string type: connected ? "wifi" : "none"
 
-    // TODO(real): D-Bus org.freedesktop.NetworkManager. NOT nmcli polling — a
-    // process spawn per refresh is the wrong thing on a battery device.
-    // No Quickshell module exists for this (docs: cc §2).
+    // TODO(real): `Quickshell.Networking` — native, verified present on the
+    // target (docs/QUICKSHELL-NOTES.md §13). An earlier note here claimed no
+    // module existed and that raw D-Bus was required; that was wrong.
+    // Quantise strength here regardless (§5) — NM churns constantly.
     property bool _realEnabled: true
     property bool _realConnected: false
     property string _realSsid: ""

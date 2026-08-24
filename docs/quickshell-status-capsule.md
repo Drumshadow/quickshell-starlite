@@ -79,7 +79,7 @@ about keeping it that way.
 | Element | Backend | Native? |
 |---|---|---|
 | Battery | `Quickshell.Services.UPower` | ✅ native |
-| Wi-Fi | NetworkManager over D-Bus | ❌ **no Quickshell module** (control-centre §2) |
+| Wi-Fi | `Quickshell.Networking` | ✅ native *(corrected 2026-08-24)* |
 
 Both glyphs come from the shared icon library and are two of its four **stateful** icons
 (`quickshell-icons.md` §4) — the ones that encode a value and therefore had to be hand-authored.

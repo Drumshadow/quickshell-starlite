@@ -79,7 +79,7 @@ The decisive research result for this component:
 | Media card | `Quickshell.Services.Mpris` | ✅ native |
 | Notification list | `Quickshell.Services.Notifications` → `NotificationServer` | ✅ native (but see §0) |
 | Battery in the status pill | `Quickshell.Services.UPower` | ✅ native |
-| **Wi-Fi tile + sub-view** | **No NetworkManager module exists** | ❌ shell out |
+| **Wi-Fi tile + sub-view** | `Quickshell.Networking` | ✅ native *(corrected 2026-08-24 — an earlier draft said no module existed)* |
 | **Brightness slider** | Not UPower; no native module | ❌ D-Bus |
 | **Night Light tile** | KWin's own (replaces hyprsunset, parent §6.7) | ❌ D-Bus |
 

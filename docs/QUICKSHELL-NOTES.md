@@ -154,3 +154,23 @@ covered by `tools/dev/slice-test.sh`.
 
 The island's IPC exposes `type`, `activate` and `results` for exactly this reason: they let the
 launcher be driven without an input device, testing every step except the event itself.
+
+## 13. Module availability — three corrections to earlier claims
+
+Verified by listing `/usr/lib64/qt6/qml/Quickshell` in the target image and importing each
+module successfully. Fedora's `quickshell-0.2.1^git20260209` is a **git snapshot**, so it
+carries modules the tagged 0.2.x docs do not list.
+
+| Earlier claim | Correction |
+|---|---|
+| `Services.Polkit` needs ≥0.3.0, so §1.13 is **blocked on the target** | **Wrong — it is present and imports cleanly.** Polkit is not version-blocked. Its *other* risks (auth agent, single agent per session) stand |
+| **No NetworkManager module exists**; Wi-Fi needs raw D-Bus (`control-center` §2, `status-capsule` §3) | **Wrong — `Quickshell.Networking` exists** and imports. Wi-Fi does not need hand-rolled D-Bus |
+| `Quickshell.Bluetooth` is native, top-level | **Correct** |
+
+Confirmed present and importing: `Networking`, `Bluetooth`, `DBusMenu`, `Io`, `Wayland`,
+`Widgets`, `X11`, and `Services/{Greetd, Mpris, Notifications, Pam, Pipewire, Polkit,
+SystemTray, UPower}`.
+
+**Consequence:** every service in this repo except brightness and session has a native backend
+available today. The remaining gates are behavioural, not availability:
+notification bus-name ownership, tray reload behaviour, OSK, and input delivery.

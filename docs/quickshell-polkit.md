@@ -26,11 +26,13 @@ spec assumes you have decided to do it.
 
 ## 1. Three gates
 
-### 1.1 Version — `Quickshell.Services.Polkit` needs ≥ 0.3.0
-It is **absent from the v0.2.0 module list** and present in 0.3.0/master. Check
-`qs --version` against what the `errornointernet/quickshell` COPR ships. If Fedora has only
-0.2.x, this component is blocked until it updates — a hard dependency the other components
-do not have.
+### 1.1 ~~Version gate~~ — RESOLVED 2026-08-24: the module is present
+Verified on the target image: `Quickshell.Services.Polkit` **is present and imports cleanly**
+in Fedora's `quickshell-0.2.1^git20260209`, which is a git snapshot carrying modules the
+tagged-0.2.x docs omit. **This gate is closed — polkit is not version-blocked.**
+
+The rest of this spec's caution stands unchanged: it is still an auth agent, still only one per
+session, and still the component whose failure stops you administering the machine.
 
 ### 1.2 Agent registration — only one agent per session
 Polkit permits a single registered agent per subject. Plasma registers
