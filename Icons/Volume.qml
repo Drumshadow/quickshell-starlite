@@ -9,7 +9,7 @@ Item {
     id: root
     property real value: 0.6        // 0..1
     property bool muted: false
-    property color ink: Tokens.onSurface
+    property color ink: Tokens.ink
     implicitWidth: Tokens.iconSize
     implicitHeight: Tokens.iconSize
 

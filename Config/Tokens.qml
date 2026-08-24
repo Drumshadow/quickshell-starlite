@@ -27,47 +27,74 @@ QtObject {
     // Qt.lighter() is useless on near-black; mix toward white/black instead.
     function lift(c, t)  { return mix(c, Qt.rgba(1,1,1,1), t) }
     function sink(c, t)  { return mix(c, Qt.rgba(0,0,0,1), t) }
-    // Pick whichever ink reads better on `bg` — this is what makes light schemes work.
-    function inkOn(bg) {
-        var light = Qt.rgba(0.96,0.95,0.94,1), dark = Qt.rgba(0.05,0.06,0.06,1)
-        return contrast(light, bg) >= contrast(dark, bg) ? light : dark
-    }
+    // Two inks; everything picks between them by measured luminance.
+    //
+    // NOTE (learned by running this): do NOT write
+    //     readonly property color ink: inkOn(surface)
+    // A colour-returning function inside a property binding evaluated to
+    // #000000 here while the same call returned #f5f2f0 imperatively — an
+    // initialisation-order trap, and NaN comparisons silently fall through to
+    // the wrong branch. Derive a BOOLEAN first, then pick. Booleans are safe
+    // in bindings; colour-returning functions are not.
+    // WARNING: never name a property `on` + Uppercase (onSurface, onAccent...).
+    // QML parses `onFoo` as a signal handler, so such a property silently reads
+    // back as default-constructed black. This cost an hour; the Material Design
+    // token names (`onSurface`, `onPrimary`) walk straight into it.
+    readonly property color inkLight: "#f5f2f0"
+    readonly property color inkDark:  "#0d1110"
+
+    function isDarkColor(c) { return lum(c) < 0.35 }
+    function inkOn(bg) { return isDarkColor(bg) ? inkLight : inkDark }
 
     // ---- derived semantic tokens ----
+    //
+    // IMPORTANT (learned by running this): a CUSTOM JS function that returns a
+    // colour is unreliable inside a property binding here — `mix(...)` and
+    // `inkOn(...)` both evaluated to black at startup while returning correct
+    // values when called imperatively. Functions returning NUMBERS or BOOLS are
+    // fine (`lum()`, `isDark`). So: derive booleans/numbers with functions, and
+    // build every colour from Qt's own built-ins (Qt.tint / Qt.rgba) inline.
     readonly property bool  isDark:         lum(background) < 0.35
 
     readonly property color surface:        background
-    readonly property color surfaceVariant: isDark ? lift(background, 0.07) : sink(background, 0.06)
-    readonly property color onSurface:      inkOn(surface)
-    readonly property color onSurfaceDim:   mix(onSurface, surface, 0.45)
-    readonly property color outline:        isDark ? lift(background, 0.14) : sink(background, 0.14)
+    readonly property color surfaceVariant: isDark
+        ? Qt.tint(background, Qt.rgba(1, 1, 1, 0.08))
+        : Qt.tint(background, Qt.rgba(0, 0, 0, 0.07))
+    readonly property color ink:      isDark ? inkLight : inkDark
+    readonly property color inkDim:   Qt.tint(surface, Qt.rgba(ink.r, ink.g, ink.b, 0.62))
+    readonly property color outline:        isDark
+        ? Qt.tint(background, Qt.rgba(1, 1, 1, 0.16))
+        : Qt.tint(background, Qt.rgba(0, 0, 0, 0.16))
 
     readonly property color accent:         accentIn
-    readonly property color onAccent:       inkOn(accentIn)
+    readonly property bool  accentIsDark:   lum(accentIn) < 0.35
+    readonly property color inkOnAccent:       accentIsDark ? inkLight : inkDark
     readonly property color critical:       criticalIn
-    readonly property color onCritical:     inkOn(criticalIn)
+    readonly property color inkOnCritical:     lum(criticalIn) < 0.35 ? inkLight : inkDark
     readonly property color success:        successIn
 
-    // A dark drop shadow reads as depth on dark and as dirt on white (theming §3).
+    // A dark drop shadow reads as depth on dark and as dirt on white.
     readonly property color shadow:         Qt.rgba(0, 0, 0, isDark ? 0.55 : 0.18)
 
     // ---- metrics (settings §4; icons scale from font size, icons §6) ----
+    // NOTE: touch target size lives in Services/InputMode, not here — it is a
+    // form-factor question, not a theme constant. Components use
+    // InputMode.touchTarget so they stay generic across laptop/tablet.
     property int  barHeight: 30
     property int  fontSize:  16
     readonly property int iconSize: Math.round(fontSize * 1.5)
-    readonly property int touchMin: 48
     readonly property int radius:   10
 
-    // ---- one Behavior here cross-fades the entire shell (theming §6) ----
-    Behavior on background { ColorAnimation { duration: 200 } }
-    Behavior on foreground { ColorAnimation { duration: 200 } }
-    Behavior on accentIn   { ColorAnimation { duration: 200 } }
+    // Theme cross-fade (theming §6) deliberately NOT enabled yet: Behaviors on
+    // these inputs animate from a default value at startup, which is what
+    // exposed the binding trap documented above. Re-add when the theme switcher
+    // exists and can be tested end to end.
 
-    // Contrast self-check, surfaced by the gallery (theming §8).
-    readonly property var audit: [
-        { pair: "onSurface/surface",    ratio: contrast(onSurface, surface),      min: 4.5 },
-        { pair: "onSurfaceDim/surface", ratio: contrast(onSurfaceDim, surface),   min: 4.5 },
-        { pair: "onAccent/accent",      ratio: contrast(onAccent, accent),        min: 4.5 },
-        { pair: "critical/surface",     ratio: contrast(critical, surface),       min: 3.0 }
-    ]
+    // Contrast self-check, rendered by the gallery (theming §8).
+    // Individual real properties — an array-of-objects binding did NOT
+    // re-evaluate and reported stale ratios.
+    readonly property real cOnSurface:    contrast(ink, surface)
+    readonly property real cOnSurfaceDim: contrast(inkDim, surface)
+    readonly property real cOnAccent:     contrast(inkOnAccent, accent)
+    readonly property real cCritical:     contrast(critical, surface)
 }

@@ -7,7 +7,7 @@ import "../Config"
 Item {
     id: root
     property real value: 0.7        // 0..1
-    property color ink: Tokens.onSurface
+    property color ink: Tokens.ink
     implicitWidth: Tokens.iconSize
     implicitHeight: Tokens.iconSize
 

@@ -1,7 +1,6 @@
-module Icons
 singleton Paths 1.0 Paths.qml
+Glyph 1.0 Glyph.qml
 Volume 1.0 Volume.qml
 Brightness 1.0 Brightness.qml
 Battery 1.0 Battery.qml
 Wifi 1.0 Wifi.qml
-Glyph 1.0 Glyph.qml

@@ -9,7 +9,7 @@ import "../Config"
 Item {
     id: root
     property string path: ""
-    property color ink: Tokens.onSurface
+    property color ink: Tokens.ink
     property real strokeW: 2.0          // match the source set's stroke weight
     property bool filled: false
     implicitWidth: Tokens.iconSize

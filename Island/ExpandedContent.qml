@@ -27,12 +27,12 @@ Item {
             width: parent.width * 0.32
             anchors.verticalCenter: parent.verticalCenter
             Text {
-                text: root.title; color: Tokens.onSurface
+                text: root.title; color: Tokens.ink
                 font.pixelSize: Tokens.fontSize * 0.8; elide: Text.ElideRight
                 width: parent.width
             }
             Text {
-                text: root.artist; color: Tokens.onSurfaceDim
+                text: root.artist; color: Tokens.inkDim
                 font.pixelSize: Tokens.fontSize * 0.65; elide: Text.ElideRight
                 width: parent.width
             }
@@ -45,14 +45,14 @@ Item {
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: Qt.formatDateTime(new Date(), "HH:mm")
-                color: Tokens.onSurface
+                color: Tokens.ink
                 font.pixelSize: Tokens.fontSize * 1.5
                 font.features: ({ "tnum": 1 })
             }
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: Qt.formatDateTime(new Date(), "ddd, MMM d")
-                color: Tokens.onSurfaceDim
+                color: Tokens.inkDim
                 font.pixelSize: Tokens.fontSize * 0.6
             }
         }
@@ -87,11 +87,11 @@ Item {
         anchors.bottom: parent.bottom
         width: Tokens.fontSize; height: Tokens.fontSize * 0.6
         path: Paths.chevronR
-        ink: Tokens.onSurfaceDim
+        ink: Tokens.inkDim
         rotation: 90
         MouseArea {
             anchors.fill: parent
-            anchors.margins: -Tokens.touchMin / 3
+            anchors.margins: -Sys.InputMode.touchTarget / 3
             onClicked: IslandState.request("control")
         }
     }

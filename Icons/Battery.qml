@@ -11,7 +11,7 @@ Item {
     property int percent: 80
     // Discharging | Charging | AtCap | Full | Low | Critical | None
     property string state: "Discharging"
-    property color ink: Tokens.onSurface
+    property color ink: Tokens.ink
 
     implicitWidth: Math.round(Tokens.iconSize * 1.9)
     implicitHeight: Tokens.iconSize
@@ -75,7 +75,7 @@ Item {
             verticalAlignment: Text.AlignVCenter
             text: label.text
             font: label.font
-            color: Tokens.inkOn(root.fillColor)
+            color: (Tokens.isDarkColor(root.fillColor) ? Tokens.inkLight : Tokens.inkDark)
         }
     }
 
@@ -102,7 +102,7 @@ Item {
         Behavior on opacity { NumberAnimation { duration: 160 } }
         preferredRendererType: Shape.CurveRenderer
         ShapePath {
-            fillColor: Tokens.inkOn(root.fillColor); strokeColor: "transparent"
+            fillColor: (Tokens.isDarkColor(root.fillColor) ? Tokens.inkLight : Tokens.inkDark); strokeColor: "transparent"
             startX: root.cellW*0.52; startY: root.cellY + root.cellH*0.16
             PathLine { x: root.cellW*0.40; y: root.cellY + root.cellH*0.54 }
             PathLine { x: root.cellW*0.50; y: root.cellY + root.cellH*0.54 }

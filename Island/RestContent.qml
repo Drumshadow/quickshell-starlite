@@ -45,7 +45,7 @@ Item {
         Text {
             id: clock
             anchors.verticalCenter: parent.verticalCenter
-            color: Tokens.onSurface
+            color: Tokens.ink
             font.pixelSize: Tokens.fontSize
             // tabular figures so the pill does not jitter (island-core §6)
             font.features: ({ "tnum": 1 })

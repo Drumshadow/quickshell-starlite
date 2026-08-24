@@ -9,7 +9,7 @@ Item {
     id: root
     property int bars: 3            // 0..4
     property bool connected: true
-    property color ink: Tokens.onSurface
+    property color ink: Tokens.ink
     implicitWidth: Tokens.iconSize
     implicitHeight: Tokens.iconSize
 
