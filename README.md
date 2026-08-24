@@ -23,25 +23,23 @@ QS_PRESET=tablet tools/dev/run-mock.sh   # tablet posture
 
 ## What is here
 
-| Path | Spec | State |
-|---|---|---|
-| `Config/Tokens.qml` | theming §2–§3 | **The contract.** Semantic tokens + luminance-aware derivation. Settle before anything else |
-| `Config/Settings.qml` | settings §4, §7 | Two clamped numbers. Persistence is a TODO (`FileView` unverified) |
-| `Island/IslandState.qml` | island-core §1, §3 | State machine + the canonical preemption matrix |
-| `Island/Island.qml` | island-core §2 | The surface, the mask, the morph. `visible` is never false |
-| `Island/RestContent.qml` | island-core §6 | Clock + EQ bars. **No status glyph** (corrected 2026-08-23) |
-| `Island/ExpandedContent.qml` | island-core §7 | Three zones + status capsule + grabber |
-| `Icons/` | icons §4 | The four stateful glyphs, hand-authored; `Glyph`+`Paths` for the static set |
-| `gallery.qml` | icons §9, theming §8 | **Runs.** Contrast audit + every icon, state and size |
-| `Services/*.qml` | service layer | **The system boundary.** UI reads these; they read real backends or `Mock` |
-| `dev-shell.qml`, `dev/MockPanel.qml` | — | **Runs.** Mocked shell with interactive controls |
-| `tools/dev/` | — | Fedora 44 container + headless compositor + screenshot harness |
-| `tools/lint.py` | — | 11 static checks, each from a bug that actually bit; runs before every render |
+| Path | State |
+|---|---|
+| `Services/*.qml` | **The system boundary.** 14 services; real backends for audio, power, media, network, apps, tray — all degrading honestly when a daemon is absent |
+| `Services/InputMode.qml` | Derives touch target, density, OSK need, gesture policy from form factor. Generic components read this, never a device assumption |
+| `Config/Tokens.qml` | Semantic tokens + luminance-aware derivation. `Themes.qml` holds six palettes; adding one is four colours |
+| `Island/` | One never-unmapped layer surface morphing between rest, expanded, osd, launcher, control, theme, wallpaper, settings, power |
+| `Components/` | Tile, SliderRow — shared, form-factor aware |
+| `gallery.qml` | Every icon, state and size + live contrast audit |
+| `dev-shell.qml`, `slice.qml`, `dev/` | Mock harness: interactive panel and CLI control |
+| `tools/lint.py` | 11 static checks, each from a bug that actually bit |
+| `tools/dev/` | Fedora 44 container, headless compositor, screenshot + 21-assertion slice test |
 
-## Not yet written
-Everything from build-order Phase 4 on: launcher, control centre, notifications, OSD
-component, media service, tray, power menu, wallpaper, theme switcher, polkit, lock screen.
-Each has a spec with its own build order.
+## Not built yet
+Notifications (gated on whether plasmashell releases the bus name — untestable
+off-hardware), lock screen (highest consequence; needs a tested second way in),
+polkit (unblocked but last by choice). Launcher is minimal — no diffed-ListModel
+reflow, mode chips or frecency yet.
 
 ## Architecture
 

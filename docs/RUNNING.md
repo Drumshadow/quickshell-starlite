@@ -60,7 +60,8 @@ tools/dev/slice-test.sh
 Drives the whole path — startup → island renders → expand → volume/brightness OSD →
 auto-dismiss → launcher opens → query filters → **application actually launches** → OSK
 affordance follows `InputMode` — asserting each step and writing screenshots to
-`tools/dev/out/slice/`. 13 assertions, exits non-zero on any failure.
+`tools/dev/out/slice/`. 21 assertions, exits non-zero on any failure — including a **safety test** that a fast
+double-tap does not fire Power Off, since the failure mode there is an accidental shutdown.
 
 The application launch is real: the container ships a `SliceProbe` desktop entry whose binary
 writes `/tmp/slice-launched`, so "it started" is asserted rather than eyeballed.

@@ -174,3 +174,25 @@ SystemTray, UPower}`.
 **Consequence:** every service in this repo except brightness and session has a native backend
 available today. The remaining gates are behavioural, not availability:
 notification bus-name ownership, tray reload behaviour, OSK, and input delivery.
+
+## 14. Further findings from building the components
+
+**`Grid` counts items, not span units.** A 2-unit-wide tile pushes the next one clean out of
+the panel. The source's control-centre layout (Wi-Fi 1 + Audio 2, then three 1s) needs explicit
+`Row`s, not a `Grid` with a span property — QML has no such property.
+
+**Colour-returning functions, again.** `Qt.tint(base, Qt.rgba(...))` in a binding is reliable;
+custom helpers returning colours are not (§4). This kept holding across every component.
+
+**`PwNodePeakMonitor` exists.** `docs/quickshell-media.md` §5 argues the EQ bars must be
+decorative because *MPRIS* carries no audio levels — true, but **Pipewire does**, via
+`PwNodePeakMonitor.peak`/`peaks`. Real levels are therefore possible. The battery argument
+against them stands (continuous DSP on an Intel N-series for decoration), but "impossible" was
+wrong; it is a choice.
+
+**Pipewire needs `PwObjectTracker`.** A node's `audio` properties stay dead until the node is
+tracked. Binding `defaultAudioSink.audio.volume` without one silently reads nothing.
+
+**Services must degrade, and it is worth testing.** With no daemons present the container gives
+`audio=false power=false media=false net=false` and the shell still runs. That is a property
+worth asserting, because the tablet will have some daemons and not others.
