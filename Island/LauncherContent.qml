@@ -90,6 +90,11 @@ Item {
         onTriggered: root.applyResults(Sys.Apps.search(input.text))
     }
     Component.onCompleted: applyResults(Sys.Apps.search(""))
+    // If the tablet-mode probe answers after we opened, raise the keyboard then.
+    Connections {
+        target: Sys.InputMode
+        function onOskNeededChanged() { if (Sys.InputMode.oskNeeded && input.activeFocus) Sys.Osk.show() }
+    }
 
     Column {
         anchors { fill: parent; margins: Tokens.fontSize * 0.5 }

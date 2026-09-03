@@ -29,6 +29,10 @@ PanelWindow {
         void(Sys.Power.available); void(Sys.Network.available)
         void(Sys.Tray.count);      void(Sys.Backlight.value)
         void(Sys.Media.available)
+        // InputMode's tablet-mode probe and DesktopEntries are lazy too: without
+        // this the first launcher open saw oskNeeded=false (no keyboard) and an
+        // empty app list (StarLite, 2026-09-03).
+        void(Sys.InputMode.tabletMode); void(Sys.Apps.all)
     }
 
     WlrLayershell.namespace: "island"
