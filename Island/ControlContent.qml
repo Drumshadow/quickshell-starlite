@@ -284,12 +284,13 @@ Item {
 
             // ---- Wi-Fi (step 9) ----
             Text {
-                visible: root.view === "wifi"
+                // hidden (not zero-height) when empty: a Column skips invisible
+                // items, and height<->implicitHeight on a Text is a binding loop
+                visible: root.view === "wifi" && text !== ""
                 text: !Sys.Network.available ? "No network device"
                     : (Sys.Network.networks.length === 0 ? (Sys.Network.scanning ? "Scanning…" : "No networks")
                                                          : (Sys.Network.scanning ? "Scanning…" : ""))
                 color: Tokens.inkDim; font.pixelSize: Tokens.fontSize * 0.75
-                height: text === "" ? 0 : implicitHeight
             }
             Repeater {
                 model: root.view === "wifi" ? Sys.Network.networks.slice(0, 8) : []
