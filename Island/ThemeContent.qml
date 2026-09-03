@@ -33,7 +33,7 @@ Item {
             readonly property real unit: (width - spacing * 2) / 3
 
             Repeater {
-                model: Themes.palettes
+                model: Themes.grid
                 delegate: Rectangle {
                     required property var modelData
                     width: parent.unit
@@ -60,8 +60,10 @@ Item {
                             font.pixelSize: Tokens.fontSize * 0.62
                         }
                     }
-                    opacity: Themes.applying && Themes.current !== modelData.id ? 0.6 : 1
-                    MouseArea { anchors.fill: parent; onClicked: Themes.set(modelData.id) }
+                    // the generated swatch is inert until a palette has been derived
+                    readonly property bool inert: modelData.generated === true && !Themes.hasGenerated
+                    opacity: inert ? 0.35 : (Themes.applying && Themes.current !== modelData.id ? 0.6 : 1)
+                    MouseArea { anchors.fill: parent; enabled: !parent.inert; onClicked: Themes.set(modelData.id) }
                 }
             }
         }

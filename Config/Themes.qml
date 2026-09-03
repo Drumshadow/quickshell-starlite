@@ -20,6 +20,20 @@ QtObject {
     id: root
 
     readonly property var palettes: ThemePreviews.list
+    // wallpaper §3: palette-from-image is an EXPLICIT action (long-press a
+    // thumbnail), never a side effect of picking a wallpaper. Its swatch is the
+    // generated entry: dimmed and inert until something has been derived, then
+    // it previews whatever the token file holds.
+    readonly property string generatedId: "wallpaper"
+    readonly property bool hasGenerated: fileValid && current === generatedId
+    readonly property var grid: palettes.concat([{
+        id: generatedId, label: "From wallpaper", generated: true, cmd: [],
+        bg: hasGenerated ? tok.background : preview.bg,
+        fg: hasGenerated ? tok.foreground : preview.fg,
+        accent: hasGenerated ? tok.accent : preview.accent,
+        critical: hasGenerated ? tok.critical : preview.critical,
+        success: hasGenerated ? tok.success : preview.success
+    }])
     readonly property string tokensPath: Quickshell.env("HOME") + "/.config/quickshell-starlite/tokens.json"
 
     property string current: "ariadne"
@@ -61,6 +75,7 @@ QtObject {
         var b = String(tok.background).toLowerCase(), f = String(tok.foreground).toLowerCase()
         for (var i = 0; i < palettes.length; i++)
             if (String(palettes[i].bg).toLowerCase() === b && String(palettes[i].fg).toLowerCase() === f) { current = palettes[i].id; return }
+        current = generatedId          // on disk but matches no preview: it was derived from an image
     }
 
     // ---- applying (§4): shell runs wallust, waits for exit, then reloads ----
@@ -74,6 +89,9 @@ QtObject {
                 root.current = root._pendingId
                 root.error = ""
                 root._file.reload()
+                // theme -> wallpaper direction (wallpaper §3): a collection named
+                // after the theme becomes the picker's current collection
+                Sys.Wallpaper.selectCollection(root._pendingId)
             } else {
                 var msg = String(applyErr.text).trim().split("\n").pop() || ("exit " + code)
                 root.error = "Theme failed: " + msg.substring(0, 80)
@@ -98,6 +116,14 @@ QtObject {
     // theming §4 secondary path: something outside the shell ran wallust
     // (`wallust theme X && qs ipc -c ~/quickshell-starlite call theme reload`)
     function reload() { if (!Sys.Env.mock) _file.reload() }
+    // wallpaper §3 / theming §12 q6: derive the palette from an image, explicitly.
+    function deriveFromImage(path) {
+        if (!path || Sys.Env.mock || applying) return false
+        _pendingId = generatedId; applying = true; error = ""
+        _apply.command = ["sh", "-c", "export PATH=\"$HOME/.local/bin:$PATH\"; wallust run -q " + _quote(path) + " && starlite-theme-post"]
+        _apply.running = true
+        return true
+    }
     function names() {
         var out = []
         for (var i = 0; i < palettes.length; i++) out.push(palettes[i].id)

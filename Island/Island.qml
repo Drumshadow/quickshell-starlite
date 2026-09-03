@@ -177,6 +177,7 @@ PanelWindow {
                  + " current=" + Sys.Wallpaper.current + (Sys.Wallpaper.error !== "" ? " error=" + Sys.Wallpaper.error : "")
         }
         function wallpaper(path: string): void { Sys.Wallpaper.apply(path) }
+        function derive(path: string): void { Themes.deriveFromImage(path) }
         // Milestone C backends, drivable without a finger
         function night(): void { Sys.NightLight.toggle() }
         function peace(): void { Sys.Notifications.setPeace(!Sys.Notifications.peaceMode) }

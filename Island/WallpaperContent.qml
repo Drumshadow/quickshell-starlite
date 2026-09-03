@@ -22,7 +22,12 @@ Item {
     // three cells of width/3 always fit; the tile is the cell minus the gap.
     readonly property int cellW: Math.floor(width / cols)
     readonly property int thumbW: cellW - gap
-    readonly property int thumbH: Math.round(thumbW * 9 / 16)
+    // §6: preview the crop Plasma will actually show (fill mode scaled+cropped)
+    // -- the panel is 3:2 and rotates, so the thumb follows the screen's aspect,
+    // not the image's 16:9
+    readonly property var _screen: Quickshell.screens.length > 0 ? Quickshell.screens[0] : null
+    readonly property real screenAspect: _screen && _screen.width > 0 ? _screen.height / _screen.width : 2 / 3
+    readonly property int thumbH: Math.round(thumbW * screenAspect)
     readonly property int visibleRows: 3
 
     Column {
@@ -59,9 +64,11 @@ Item {
         }
 
         Text {
-            visible: Sys.Wallpaper.applying || Sys.Wallpaper.error !== ""
-            text: Sys.Wallpaper.applying ? "Applying…" : Sys.Wallpaper.error
-            color: Sys.Wallpaper.error !== "" ? Tokens.critical : Tokens.inkDim
+            visible: Sys.Wallpaper.applying || Sys.Wallpaper.error !== "" || Themes.applying || Themes.error !== ""
+            text: Themes.applying ? "Deriving palette from wallpaper…"
+                : Themes.error !== "" ? Themes.error
+                : Sys.Wallpaper.applying ? "Applying…" : Sys.Wallpaper.error
+            color: (Sys.Wallpaper.error !== "" || Themes.error !== "") ? Tokens.critical : Tokens.inkDim
             font.pixelSize: Tokens.fontSize * 0.65
         }
 
@@ -108,7 +115,22 @@ Item {
                         anchors.fill: parent; radius: parent.radius
                         color: Tokens.ink; opacity: tilePress.pressed ? 0.18 : 0
                     }
-                    MouseArea { id: tilePress; anchors.fill: parent; onClicked: Sys.Wallpaper.apply(modelData.path) }
+                    // tap = set wallpaper; long-press = derive the palette from it (§3:
+                    // explicit, never a side effect of the tap)
+                    MouseArea {
+                        id: tilePress
+                        anchors.fill: parent
+                        onClicked: Sys.Wallpaper.apply(modelData.path)
+                        onPressAndHold: Themes.deriveFromImage(modelData.path)
+                    }
+                    Rectangle {   // long-press progress, so a hold never reads as a dropped tap
+                        visible: tilePress.pressed
+                        anchors { left: parent.left; bottom: parent.bottom; bottomMargin: 3; leftMargin: 6 }
+                        height: 3; radius: 1.5
+                        color: Tokens.accent
+                        width: 0
+                        NumberAnimation on width { running: tilePress.pressed; from: 0; to: tile.width - 12; duration: 800 }
+                    }
                 }
             }
         }

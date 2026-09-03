@@ -36,6 +36,8 @@ QtObject {
     readonly property int count: items.length
     readonly property bool available: all.length > 0
 
+    // theme -> wallpaper (§3): only when a collection of that name exists
+    function selectCollection(id) { if (collections.indexOf(id) >= 0) collection = id }
     function nextCollection() {
         var i = collections.indexOf(collection)
         collection = collections[(i + 1) % collections.length]
@@ -64,12 +66,16 @@ QtObject {
             else root.error = "Wallpaper failed: " + (String(applyErr.text).trim().split("\\n").pop() || ("exit " + code)).substring(0, 80)
         }
     }
+    function _quote(s) { return "'" + String(s).replace(/'/g, "'\\''") + "'" }
     function apply(path) {
         if (!path) return
         if (Env.mock) { current = path; return }
         if (applying) return
         applying = true; error = ""
-        _apply.command = ["plasma-apply-wallpaperimage", path]
+        // §10 q4: keep the lock screen coherent -- Plasma stores it separately
+        _apply.command = ["sh", "-c",
+            "plasma-apply-wallpaperimage " + _quote(path) +
+            " && kwriteconfig6 --file kscreenlockerrc --group Greeter --group Wallpaper --group org.kde.image --group General --key Image " + _quote("file://" + path)]
         _apply.running = true
     }
     function rescan() { if (!Env.mock) { _scan.running = true; _readCurrent.running = true } }
