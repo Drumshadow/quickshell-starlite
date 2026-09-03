@@ -188,6 +188,22 @@ a tablet that someone else may pick up.
 
 ---
 
+## 6.1 Hardware outcome 2026-09-03 — LIVE
+
+Steps 1–6 verified on the StarLite: `isRegistered` is false while
+`plasma-polkit-agent.service` runs and true once it is stopped; a real `pkexec true` from
+inside the session raised the card with the verbatim message, `org.freedesktop.policykit.exec`,
+the single identity, the OSK up; a wrong password came back as `failed` with the field
+cleared and retry allowed; Cancel dismissed pkexec ("Request dismissed"). Step 7 applied:
+
+```bash
+systemctl --user mask --now plasma-polkit-agent.service      # ours is the agent
+# REVERSAL (from SSH or a terminal, no shell restart needed for Plasma's agent):
+systemctl --user unmask plasma-polkit-agent.service && systemctl --user start plasma-polkit-agent.service
+```
+
+If the island ever fails to register (health IPC `polkit state`), run the reversal.
+
 ## 7. Build order
 
 1. `PolkitAgent` with **no UI**. Log `isRegistered` only. Confirm registration succeeds while
