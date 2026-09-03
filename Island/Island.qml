@@ -120,6 +120,7 @@ PanelWindow {
                  + " | vol=" + Sys.Audio.volume.toFixed(2)
                  + " bat=" + Sys.Power.percentage + "/" + Sys.Power.state
                  + " net=" + Sys.Network.type
+                 + " osk=" + (Sys.Osk.lastResult === "" ? "never" : Sys.Osk.lastResult)
         }
 
         // Drive the launcher without synthetic input. A headless container has
@@ -136,7 +137,7 @@ PanelWindow {
         }
         function results(): string {
             if (IslandState.current !== "launcher" || !loader.item) return ""
-            var r = loader.item.results, out = []
+            var r = loader.item.resultsModel !== undefined ? loader.item.resultsModel : loader.item.results, out = []
             if (r && r.count !== undefined) {           // ListModel (launcher §8)
                 for (var i = 0; i < r.count; i++) out.push(r.get(i).name)
             } else if (r && r.length !== undefined) {   // plain array (older content)

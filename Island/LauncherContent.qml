@@ -37,6 +37,8 @@ Item {
     implicitHeight: _chrome + visibleRows * rowH
 
     ListModel { id: results }
+    // exposed for the island's `results` IPC and the slice test
+    readonly property alias resultsModel: results
 
     function focusInput() {
         input.forceActiveFocus()
