@@ -23,12 +23,22 @@ dark = lum(bg) < 0.35
 W, K = (255,255,255), (0,0,0)
 lift = (lambda c, x: mix(c, W, x)) if dark else (lambda c, x: mix(c, K, x))
 ink_light, ink_dark = (245,242,240), (13,17,16)
-ink = ink_light if dark else ink_dark
+def contrast(a, b):
+    la, lb = lum(a), lum(b); return (max(la, lb)+0.05)/(min(la, lb)+0.05)
+def best_ink(c): return ink_light if contrast(ink_light, c) >= contrast(ink_dark, c) else ink_dark
+ink = best_ink(bg)
+# same rules as Config/Tokens.qml: push the accent away from its ink until >= 4.5,
+# pull critical toward the ink until >= 3:1 on the surface
+ink_ac = best_ink(accent); away = K if ink_ac == ink_light else W
+for t in [x*0.05 for x in range(13)]:
+    if contrast(ink_ac, mix(accent, away, t)) >= 4.5: accent = mix(accent, away, t); break
+for t in [x*0.05 for x in range(13)]:
+    if contrast(mix(crit, ink, t), bg) >= 3.0: crit = mix(crit, ink, t); break
 ink_dim = mix(bg, ink, 0.62)
 surface_variant = lift(bg, 0.08 if dark else 0.07)
 button = lift(bg, 0.12 if dark else 0.09)
 header = lift(bg, 0.05 if dark else 0.04)
-on_accent = ink_light if lum(accent) < 0.35 else ink_dark
+on_accent = best_ink(accent)
 neutral = cols[3] if len(cols) > 3 else (246,116,0)
 link = cols[6] if len(cols) > 6 else accent
 visited = cols[5] if len(cols) > 5 else accent

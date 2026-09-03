@@ -49,6 +49,25 @@ QtObject {
     function isDarkColor(c) { return lum(c) < 0.35 }
     function inkOn(bg) { return isDarkColor(bg) ? inkLight : inkDark }
 
+    // Contrast audit across 19 wallust themes (2026-09-03) killed the fixed
+    // luminance threshold: mid-luminance accents (Nord #81A1C1, Kanagawa,
+    // Solarized) got the wrong ink at 2.4:1. Pick the ink that MEASURES higher.
+    function lightInkBetter(c) { return contrast(inkLight, c) >= contrast(inkDark, c) }
+    // How far (0..0.6) to push a fill AWAY from its ink until ink-on-fill >= 4.5.
+    // Returns a number, so it is safe inside a colour binding (see the note below).
+    function pushFor(fill, useLight) {
+        var ink = useLight ? inkLight : inkDark
+        var away = useLight ? Qt.rgba(0,0,0,1) : Qt.rgba(1,1,1,1)
+        for (var t = 0; t <= 0.6; t += 0.05) if (contrast(ink, mix(fill, away, t)) >= 4.5) return t
+        return 0.6
+    }
+    // How far to pull a status colour toward the surface ink until it reads >= 3:1.
+    function liftFor(c, bg, useLight) {
+        var ink = useLight ? inkLight : inkDark
+        for (var t = 0; t <= 0.6; t += 0.05) if (contrast(mix(c, ink, t), bg) >= 3.0) return t
+        return 0.6
+    }
+
     // ---- derived semantic tokens ----
     //
     // IMPORTANT (learned by running this): a CUSTOM JS function that returns a
@@ -58,22 +77,30 @@ QtObject {
     // fine (`lum()`, `isDark`). So: derive booleans/numbers with functions, and
     // build every colour from Qt's own built-ins (Qt.tint / Qt.rgba) inline.
     readonly property bool  isDark:         lum(background) < 0.35
+    readonly property bool  useLightInk:    lightInkBetter(background)
 
     readonly property color surface:        background
     readonly property color surfaceVariant: isDark
         ? Qt.tint(background, Qt.rgba(1, 1, 1, 0.08))
         : Qt.tint(background, Qt.rgba(0, 0, 0, 0.07))
-    readonly property color ink:      isDark ? inkLight : inkDark
+    readonly property color ink:      useLightInk ? inkLight : inkDark
     readonly property color inkDim:   Qt.tint(surface, Qt.rgba(ink.r, ink.g, ink.b, 0.62))
     readonly property color outline:        isDark
         ? Qt.tint(background, Qt.rgba(1, 1, 1, 0.16))
         : Qt.tint(background, Qt.rgba(0, 0, 0, 0.16))
 
-    readonly property color accent:         accentIn
-    readonly property bool  accentIsDark:   lum(accentIn) < 0.35
-    readonly property color inkOnAccent:       accentIsDark ? inkLight : inkDark
-    readonly property color critical:       criticalIn
-    readonly property color inkOnCritical:     lum(criticalIn) < 0.35 ? inkLight : inkDark
+    readonly property bool  accentUseLight: lightInkBetter(accentIn)
+    readonly property real  accentPush:     pushFor(accentIn, accentUseLight)
+    // pushed away from its ink only when the raw accent cannot carry text (Gruvbox,
+    // Latte, Paper sat at 4.4-4.5); zero for the other sixteen
+    readonly property color accent:         accentUseLight
+        ? Qt.tint(accentIn, Qt.rgba(0, 0, 0, accentPush))
+        : Qt.tint(accentIn, Qt.rgba(1, 1, 1, accentPush))
+    readonly property bool  accentIsDark:   accentUseLight
+    readonly property color inkOnAccent:       accentUseLight ? inkLight : inkDark
+    readonly property real  criticalLift:   liftFor(criticalIn, background, useLightInk)
+    readonly property color critical:       Qt.tint(criticalIn, Qt.rgba(ink.r, ink.g, ink.b, criticalLift))
+    readonly property color inkOnCritical:     lightInkBetter(critical) ? inkLight : inkDark
     readonly property color success:        successIn
 
     // A dark drop shadow reads as depth on dark and as dirt on white.

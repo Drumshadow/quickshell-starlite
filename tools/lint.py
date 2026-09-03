@@ -82,12 +82,15 @@ for path in qml_files():
             add("QS007", path, i, "derive a bool/number with a function, then build the colour with Qt.tint/Qt.rgba")
 
         # QS008 — colour literals outside the token file
-        if os.path.basename(path) not in ("Tokens.qml", "Themes.qml"):
+        # ThemePreviews.qml is GENERATED from wallust output (the fallback palette)
+        if os.path.basename(path) not in ("Tokens.qml", "Themes.qml", "ThemePreviews.qml"):
             if re.search(r'"#[0-9a-fA-F]{3,8}"', rawlines[i-1]) and "qmldir" not in path:
                 add("QS008", path, i, "colours belong in Config/Tokens.qml so every theme works")
 
         # QS009 — shell-command QML
-        if re.search(r"\b(Process|execDetached)\b", ln) and os.sep + "Services" + os.sep not in path:
+        # Config/Themes.qml owns the wallust pipeline (theming §4) -- it IS the service
+        if re.search(r"\b(Process|execDetached)\b", ln) and os.sep + "Services" + os.sep not in path \
+                and os.path.basename(path) != "Themes.qml":
             add("QS009", path, i, "system access belongs behind a service, not in a UI component")
 
         # QS010 — service boundary
