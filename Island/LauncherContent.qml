@@ -40,10 +40,14 @@ Item {
 
     function focusInput() {
         input.forceActiveFocus()
-        // Probe verdict (§3.1.8): tap raises the OSK, programmatic focus does not.
-        // The launcher opens programmatically, so ask for it explicitly (Amber path).
-        if (Sys.InputMode.oskNeeded) Qt.inputMethod.show()
+        // Probe verdict (§3.1.8): a tap raises the OSK; programmatic focus does not,
+        // and on this stack neither does Qt.inputMethod.show(). The launcher opens
+        // programmatically, so ask the compositor directly (Services/Osk).
+        if (Sys.InputMode.oskNeeded) { Qt.inputMethod.show(); Sys.Osk.show() }
     }
+    // The content unloads whenever the island leaves the launcher state (launch,
+    // Escape, tap-outside, preemption) -- one hook covers every dismiss path.
+    Component.onDestruction: if (Sys.InputMode.oskNeeded) Sys.Osk.hide()
 
     function activate() {
         if (results.count === 0) return
@@ -181,16 +185,19 @@ Item {
                     Item {
                         width: 24; height: 24
                         anchors.verticalCenter: parent.verticalCenter
+                        // Quickshell.iconPath returns a provider URL (image://icon/...),
+                        // not a file path -- verified on the StarLite. Use it as-is.
                         Image {
+                            id: img
                             anchors.fill: parent
                             visible: row.icon !== "" && status === Image.Ready
-                            source: row.icon !== "" ? "file://" + row.icon : ""
+                            source: row.icon
                             sourceSize: Qt.size(48, 48)
                             smooth: true
                         }
                         LetterAvatar {
                             anchors.fill: parent
-                            visible: row.icon === ""
+                            visible: row.icon === "" || img.status === Image.Error
                             name: row.name
                         }
                     }

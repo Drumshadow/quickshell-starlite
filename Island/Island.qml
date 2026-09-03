@@ -137,7 +137,11 @@ PanelWindow {
         function results(): string {
             if (IslandState.current !== "launcher" || !loader.item) return ""
             var r = loader.item.results, out = []
-            for (var i = 0; i < r.length; i++) out.push(r[i].name)
+            if (r && r.count !== undefined) {           // ListModel (launcher §8)
+                for (var i = 0; i < r.count; i++) out.push(r.get(i).name)
+            } else if (r && r.length !== undefined) {   // plain array (older content)
+                for (var j = 0; j < r.length; j++) out.push(r[j].name)
+            }
             return out.join(",")
         }
     }
