@@ -7,6 +7,12 @@ import "../Config"
 import "../Icons"
 import "../Services" as Sys
 
+// NOT WIRED IN (shell.qml does not import it). KWin 6.7.4 lacks
+// ext-session-lock-v1 entirely -- verified on the StarLite 2026-09-03 -- so this
+// cannot run yet. Kept for the KWin release that ships the protocol. Known
+// remaining bug: `pw` is inside the per-screen surface component and out of
+// scope for the Scope-level helpers; route clears through a signal when reviving.
+//
 // Lock screen -- docs/quickshell-lock-greeter.md. ext-session-lock-v1 via
 // WlSessionLock; PAM ("kde" stack = password-auth, plain pam_unix on this box).
 //
@@ -158,7 +164,7 @@ Scope {
             if (result === PamResult.Success) {
                 root.failed = false
                 root._clear()
-                Sys.Session._unlock()
+                Sys.Session._realLocked = false
             } else {
                 root.failed = true
                 root._clear()
@@ -182,7 +188,7 @@ Scope {
             if (Sys.Session.locked) { root.failed = false; root._clear() }
             else { root._clear(); root._pending = ""; root.busy = false; if (Sys.InputMode.oskNeeded) Sys.Osk.hide() }
         }
-        function onUnlockedByLogind() { if (Sys.Session.locked) { pam.abort(); Sys.Session._unlock() } }
+
     }
 
     // ---- IPC ----
@@ -191,7 +197,7 @@ Scope {
     // ~/.config/quickshell-starlite/lock-dev existed at startup, and is for the
     // wrong-password path -- never send a real password over IPC.
     readonly property bool devMode: Sys.Session.lockDevMode
-    Timer { id: autoUnlock; repeat: false; onTriggered: { pam.abort(); Sys.Session._unlock() } }
+    Timer { id: autoUnlock; repeat: false; onTriggered: { pam.abort(); Sys.Session._realLocked = false } }
     IpcHandler {
         target: "lock"
         function lock(): void { Sys.Session.lock() }

@@ -19,6 +19,19 @@ Two components, and they are **not** the same risk:
 
 ---
 
+## 0. Hardware verdict 2026-09-03 — RED: KWin 6.7.4 has no `ext-session-lock-v1`
+
+`wayland-info` on the StarLite (Fedora 44, KWin 6.7.4) lists no `ext_session_lock_v1`
+global, `libkwin.so.6` contains no such symbol string, and `WlSessionLock` fails with
+"The current compositor does not support the ext-session-lock-v1 protocol". §4's "KWin 6.6+
+implements it" was wrong for this build. **Outcome:** kscreenlocker stays. The power menu's
+Lock tile runs `loginctl lock-session`; Plasma's locker already shows our wallpaper (the
+picker writes kscreenlockerrc) and our colour scheme (Starlite.colors via kdeglobals), which is
+most of §7's design for free. `Lock/LockScreen.qml` is written but not imported by shell.qml;
+revisit when a KWin release advertises the protocol. The greeter verdict in §2 stands, with
+one correction: the login manager on this image is **Plasma Login Manager** (`plasmalogin.service`),
+not SDDM — there is no SDDM theme directory to write into.
+
 ## 1. Lead finding: the documented crash behaviour
 
 From Quickshell's own `WlSessionLock` documentation:
