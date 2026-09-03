@@ -66,7 +66,7 @@ QtObject {
             else root.error = "Wallpaper failed: " + (String(applyErr.text).trim().split("\\n").pop() || ("exit " + code)).substring(0, 80)
         }
     }
-    function _quote(s) { return "'" + String(s).replace(/'/g, "'\\''") + "'" }
+    function _quote(s) { return "'" + String(s).split("'").join("'\\''") + "'" }
     function apply(path) {
         if (!path) return
         if (Env.mock) { current = path; return }

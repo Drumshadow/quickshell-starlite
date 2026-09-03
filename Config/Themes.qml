@@ -99,7 +99,7 @@ QtObject {
             root._pendingId = ""
         }
     }
-    function _quote(s) { return "'" + String(s).replace(/'/g, "'\\''") + "'" }
+    function _quote(s) { return "'" + String(s).split("'").join("'\\''") + "'" }
     function set(id) {
         var p = null
         for (var i = 0; i < palettes.length; i++) if (palettes[i].id === id) p = palettes[i]
