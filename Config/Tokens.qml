@@ -121,8 +121,10 @@ QtObject {
     // NOTE: touch target size lives in Services/InputMode, not here — it is a
     // form-factor question, not a theme constant. Components use
     // InputMode.touchTarget so they stay generic across laptop/tablet.
-    property int  barHeight: 30
-    property int  fontSize:  16
+    // Bound to Settings (2026-09-03: these were free-standing 30/16, so the
+    // settings sliders only ever changed the preview swatch).
+    property int  barHeight: Settings.barHeight
+    property int  fontSize:  Settings.fontSize
     readonly property int iconSize: Math.round(fontSize * 1.5)
     readonly property int radius:   10
 

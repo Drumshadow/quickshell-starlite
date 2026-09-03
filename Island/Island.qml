@@ -86,6 +86,16 @@ PanelWindow {
         function close(): void  { if (IslandState.current === "launcher") IslandState.release() }
     }
 
+    IpcHandler {
+        target: "settings"
+        function show(): string {
+            return "bar=" + Settings.barHeight + " font=" + Settings.fontSize + " osk=" + Settings.oskFraction
+                 + " loaded=" + Settings.loaded + " tokensFont=" + Tokens.fontSize
+        }
+        function font(px: int): void { Settings.setFont(px) }
+        function bar(px: int): void { Settings.setBar(px) }
+    }
+
     // theming §4: reload the token file after an external `wallust theme`
     IpcHandler {
         target: "theme"
