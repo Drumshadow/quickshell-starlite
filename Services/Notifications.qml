@@ -24,39 +24,36 @@ QtObject {
     property bool _realAttention: false
     property string lastResult: ""
 
-    readonly property string _svc: "org.freedesktop.Notifications"
-    readonly property string _path: "/org/freedesktop/Notifications"
-    readonly property string _iface: "org.freedesktop.Notifications"
-
-    property var _readInhibited: Process {
-        command: ["busctl", "--user", "get-property", root._svc, root._path, root._iface, "Inhibited"]
+    // Read-back is the config file, not the bus: plasmashell's `Inhibited`
+    // property only covers application Inhibit() calls, never DND (checked
+    // 2026-09-03 -- stayed false with DND on). Plasma stores the deadline in
+    // KConfig list form, "yyyy,M,d,h,m,s"; an ISO string is silently ignored.
+    property var _readUntil: Process {
+        command: ["kreadconfig6", "--file", "plasmanotifyrc", "--group", "DoNotDisturb", "--key", "Until"]
         running: !Env.mock
-        stdout: StdioCollector { onStreamFinished: root._realPeace = String(this.text).indexOf("true") >= 0 }
+        stdout: StdioCollector { onStreamFinished: root._realPeace = root._inFuture(this.text) }
     }
-    property var _monitor: Process {
-        command: ["busctl", "--user", "monitor", "--json=short",
-                  "--match", "type='signal',path='" + root._path + "',interface='org.freedesktop.DBus.Properties',member='PropertiesChanged'"]
-        running: !Env.mock
-        stdout: SplitParser {
-            onRead: (line) => {
-                if (line.indexOf('"Inhibited"') < 0) return
-                var m = line.match(/"Inhibited":\{"type":"b","data":(true|false)\}/)
-                if (m) root._realPeace = (m[1] === "true")
-            }
-        }
+    function _inFuture(text) {
+        var parts = String(text).trim().split(",")
+        if (parts.length < 3) return false
+        var d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10),
+                         parseInt(parts[3] || "0", 10), parseInt(parts[4] || "0", 10), parseInt(parts[5] || "0", 10))
+        return d.getTime() > Date.now()
     }
     property var _apply: Process {
         stdout: StdioCollector {}
         stderr: StdioCollector {}
-        onExited: function (code) { root.lastResult = "peace:" + code; root._readInhibited.running = true }
+        onExited: function (code) { root.lastResult = "peace:" + code; root._readUntil.running = true }
     }
+    // Plasma's own applet can flip DND too; refresh whenever the panel opens
+    function refresh() { if (!Env.mock) _readUntil.running = true }
 
     function setPeace(on) {
         if (Env.mock) { Mock.peaceMode = on; return }
         if (_apply.running) return
         _apply.command = on
-            ? ["kwriteconfig6", "--file", "plasmanotifyrc", "--group", "DoNotDisturb", "--key", "Until", "2099-01-01T00:00:00"]
-            : ["kwriteconfig6", "--file", "plasmanotifyrc", "--group", "DoNotDisturb", "--key", "Until", "--delete"]
+            ? ["kwriteconfig6", "--notify", "--file", "plasmanotifyrc", "--group", "DoNotDisturb", "--key", "Until", "2099,1,1,0,0,0"]
+            : ["kwriteconfig6", "--notify", "--file", "plasmanotifyrc", "--group", "DoNotDisturb", "--key", "Until", "--delete"]
         _apply.running = true
     }
 }

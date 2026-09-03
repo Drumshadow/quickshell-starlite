@@ -48,17 +48,22 @@ QtObject {
         }
     }
 
-    // write config, then reconfigure -- one shell so the order is guaranteed
+    // Write config WITH the KConfig notify flag (the plugin reloads through a
+    // KConfigWatcher) and ask KWin to reconfigure as well; on the StarLite
+    // either alone did nothing and both together took ~5 s to land. The
+    // PropertiesChanged monitor above catches it whenever it does; the timed
+    // re-read is belt and braces.
     property var _apply: Process {
         stdout: StdioCollector {}
         stderr: StdioCollector {}
-        onExited: function (code) { root.lastResult = "night:" + code; root._readRunning.running = true }
+        onExited: function (code) { root.lastResult = "night:" + code; root._recheck.restart() }
     }
+    property var _recheck: Timer { interval: 7000; repeat: false; onTriggered: root._readRunning.running = true }
     function set(on) {
         if (Env.mock || _apply.running) return
         _apply.command = ["sh", "-c",
-            "kwriteconfig6 --file kwinrc --group NightColor --key Active " + (on ? "true" : "false") +
-            (on ? " && kwriteconfig6 --file kwinrc --group NightColor --key Mode Constant" : "") +
+            "kwriteconfig6 --notify --file kwinrc --group NightColor --key Active " + (on ? "true" : "false") +
+            (on ? " && kwriteconfig6 --notify --file kwinrc --group NightColor --key Mode Constant" : "") +
             " && busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure"]
         _apply.running = true
     }

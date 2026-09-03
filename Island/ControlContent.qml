@@ -16,6 +16,7 @@ Item {
     implicitHeight: stack.implicitHeight
 
     function back() { view = "main" }
+    Component.onCompleted: Sys.Notifications.refresh()
 
     // sub-views push in horizontally while the height animates to the incoming
     // content — one driver, or the two visibly desync
@@ -170,7 +171,10 @@ Item {
                             width: 20; height: 20
                             source: modelData.icon
                             sourceSize.width: 20; sourceSize.height: 20
-                            asynchronous: true
+                            // synchronous on purpose: the image://icon provider
+                            // logs a cross-thread QObject warning from
+                            // QQuickPixmapReader when loaded async (StarLite)
+                            asynchronous: false
                             // tray icons belong to the applications: never recolour
                             // them, an unrecognisable tray icon defeats the point
                         }
