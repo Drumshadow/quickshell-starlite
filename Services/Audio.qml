@@ -24,6 +24,32 @@ QtObject {
         Env.mock ? Mock.sinkName
                  : (_sink ? (_sink.description || _sink.nickname || _sink.name || "") : "")
 
+    // ---- output picker (control-center step 10) ----
+    readonly property var sinks: Env.mock ? Mock.sinks : _realSinks
+    readonly property var _realSinks: {
+        if (!Pipewire.nodes) return []
+        var v = Pipewire.nodes.values, out = []
+        var hasType = (typeof PwNodeType !== "undefined" && PwNodeType.AudioSink !== undefined)
+        for (var i = 0; i < v.length; i++) {
+            var n = v[i]
+            if (!n) continue
+            var ok = hasType ? (n.type === PwNodeType.AudioSink) : (n.isSink && !n.isStream)
+            if (ok) out.push(n)
+        }
+        return out
+    }
+    function sinkLabel(n) { return n ? (n.description || n.nickname || n.name || "Output") : "" }
+    function isDefaultSink(n) {
+        if (!n) return false
+        if (Env.mock) return n.description === Mock.sinkName
+        return _sink === n
+    }
+    function setDefaultSink(n) {
+        if (!n) return
+        if (Env.mock) { Mock.sinkName = n.description; return }
+        Pipewire.preferredDefaultAudioSink = n
+    }
+
     function setVolume(v) {
         v = Math.max(0, Math.min(1, v))
         if (Env.mock) { Mock.volume = v; return }

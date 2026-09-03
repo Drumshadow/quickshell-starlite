@@ -21,6 +21,11 @@ QtObject {
     property real volume: 0.55
     property bool muted: false
     property string sinkName: "Mock Analog Output"
+    property var sinks: [
+        { description: "Mock Analog Output" },
+        { description: "Mock HDMI / DisplayPort" },
+        { description: "Mock Bluetooth Headset" }
+    ]
 
     // --- brightness ---
     property real brightness: 0.7
@@ -30,6 +35,13 @@ QtObject {
     property bool wifiConnected: true
     property int  wifiStrength: 3        // 0..4, already quantised
     property string ssid: "Mock 5G"
+    // shape mirrors what Network.networks yields in real mode (see Network.qml)
+    property var wifiNetworks: [
+        { name: "Mock 5G",      connected: true,  known: true,  secured: true,  signalStrength: 0.82, stateChanging: false },
+        { name: "Mock 2.4G",    connected: false, known: true,  secured: true,  signalStrength: 0.61, stateChanging: false },
+        { name: "Coffee Guest", connected: false, known: false, secured: false, signalStrength: 0.40, stateChanging: false },
+        { name: "NeighborNet",  connected: false, known: false, secured: true,  signalStrength: 0.25, stateChanging: false }
+    ]
 
     // --- bluetooth ---
     property bool btEnabled: false

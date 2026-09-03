@@ -51,6 +51,58 @@ QtObject {
                     : (_active ? quantise(_active.signalStrength <= 1 ? _active.signalStrength * 100 : _active.signalStrength)
                                : 4))
 
+    // ---- sub-view (control-center step 9) ----
+    // Rows are the live WifiNetwork objects (name, connected, known, security,
+    // signalStrength, stateChanging) or Mock.wifiNetworks with the same fields.
+    // Sorted connected > known > name; NOT by strength, or rows reshuffle on
+    // every dBm wobble while the user is aiming a finger at one.
+    readonly property var networks: Env.mock ? Mock.wifiNetworks : _realNetworks
+    readonly property var _realNetworks: {
+        if (!_wifi || !_wifi.networks) return []
+        var v = _wifi.networks.values, out = []
+        for (var i = 0; i < v.length; i++) if (v[i] && v[i].name) out.push(v[i])
+        out.sort(function (a, b) {
+            if (a.connected !== b.connected) return a.connected ? -1 : 1
+            if (a.known !== b.known) return a.known ? -1 : 1
+            return String(a.name).localeCompare(String(b.name))
+        })
+        return out
+    }
+    readonly property bool scanning: (!Env.mock && _wifi) ? _wifi.scannerEnabled : false
+    function setScanning(on) { if (!Env.mock && _wifi) _wifi.scannerEnabled = on }
+
+    function isOpen(n) {
+        if (!n) return false
+        if (Env.mock) return !n.secured
+        return (typeof WifiSecurityType !== "undefined" && WifiSecurityType.None !== undefined)
+               ? n.security === WifiSecurityType.None : false
+    }
+    function strengthOf(n) {
+        if (!n) return 0
+        var s = n.signalStrength
+        return quantise(s <= 1 ? s * 100 : s)
+    }
+    function connectTo(n, psk) {
+        if (!n) return
+        if (Env.mock) {
+            var list = Mock.wifiNetworks.slice()
+            for (var i = 0; i < list.length; i++) {
+                var c = list[i]
+                list[i] = { name: c.name, known: c.known || c === n, secured: c.secured,
+                            signalStrength: c.signalStrength, stateChanging: false,
+                            connected: c === n }
+            }
+            Mock.wifiNetworks = list; Mock.wifiConnected = true; Mock.ssid = n.name
+            return
+        }
+        if (psk && psk.length > 0) n.connectWithPsk(psk); else n.connect()
+    }
+    function disconnectFrom(n) {
+        if (!n) return
+        if (Env.mock) { Mock.preset("offline"); return }
+        n.disconnect()
+    }
+
     function quantise(pct) {
         if (pct <= 0) return 0
         if (pct < 30) return 1

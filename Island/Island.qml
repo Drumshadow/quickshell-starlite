@@ -39,9 +39,9 @@ PanelWindow {
     WlrLayershell.namespace: "island"
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus:
-        IslandState.focusFor(IslandState.current) === "Exclusive"
-            ? WlrKeyboardFocus.Exclusive
-            : WlrKeyboardFocus.None
+        IslandState.focusFor(IslandState.current) === "Exclusive" ? WlrKeyboardFocus.Exclusive
+      : IslandState.focusFor(IslandState.current) === "OnDemand"  ? WlrKeyboardFocus.OnDemand
+      : WlrKeyboardFocus.None
 
     // ---- OSD: event-driven from the services, not from a keypress ----------
     // Bind to the VALUE so it works for every source of change, not only ours
@@ -130,6 +130,23 @@ PanelWindow {
                  + " night=" + Sys.NightLight.running + (Sys.NightLight.available ? "" : "(n/a)")
                  + " peace=" + Sys.Notifications.peaceMode
                  + " session=" + (Sys.Session.lastResult === "" ? "never" : Sys.Session.lastResult)
+        }
+        // control-centre sub-views, drivable without a finger
+        function view(v: string): void {
+            if (IslandState.current === "control" && loader.item) loader.item.view = v
+        }
+        function wifi(): string {
+            var l = Sys.Network.networks, out = []
+            for (var i = 0; i < l.length; i++) {
+                var n = l[i]
+                out.push(n.name + (n.connected ? "*" : "") + (n.known ? "+" : "") + (Sys.Network.isOpen(n) ? "" : "#") + Sys.Network.strengthOf(n))
+            }
+            return "scanning=" + Sys.Network.scanning + " " + out.join(",")
+        }
+        function sinks(): string {
+            var l = Sys.Audio.sinks, out = []
+            for (var i = 0; i < l.length; i++) out.push(Sys.Audio.sinkLabel(l[i]) + (Sys.Audio.isDefaultSink(l[i]) ? "*" : ""))
+            return out.join(",")
         }
         // Milestone C backends, drivable without a finger
         function night(): void { Sys.NightLight.toggle() }

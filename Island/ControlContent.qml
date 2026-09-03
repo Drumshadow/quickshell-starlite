@@ -15,8 +15,13 @@ Item {
     implicitWidth: Tokens.fontSize * 22
     implicitHeight: stack.implicitHeight
 
-    function back() { view = "main" }
+    function back() { view = "main"; pskFor = "" }
     Component.onCompleted: Sys.Notifications.refresh()
+    // the network whose inline password row is open ("" = none)
+    property string pskFor: ""
+    // scan only while the list is on screen -- NM scanning costs battery
+    onViewChanged: Sys.Network.setScanning(view === "wifi")
+    Component.onDestruction: Sys.Network.setScanning(false)
 
     // sub-views push in horizontally while the height animates to the incoming
     // content — one driver, or the two visibly desync
@@ -277,19 +282,141 @@ Item {
                 }
             }
 
+            // ---- Wi-Fi (step 9) ----
             Text {
                 visible: root.view === "wifi"
-                text: Sys.Network.available
-                      ? (Sys.Network.connected ? "Connected to " + (Sys.Network.ssid || "network")
-                                               : "Not connected")
-                      : "No network device"
+                text: !Sys.Network.available ? "No network device"
+                    : (Sys.Network.networks.length === 0 ? (Sys.Network.scanning ? "Scanning…" : "No networks")
+                                                         : (Sys.Network.scanning ? "Scanning…" : ""))
                 color: Tokens.inkDim; font.pixelSize: Tokens.fontSize * 0.75
+                height: text === "" ? 0 : implicitHeight
             }
+            Repeater {
+                model: root.view === "wifi" ? Sys.Network.networks.slice(0, 8) : []
+                delegate: Column {
+                    id: wrow
+                    required property var modelData
+                    required property int index
+                    width: detail.width
+                    spacing: 4
+                    readonly property bool open: Sys.Network.isOpen(modelData)
+                    readonly property bool askPsk: root.pskFor === modelData.name
+
+                    Rectangle {
+                        width: parent.width
+                        height: Sys.InputMode.touchTarget
+                        radius: Tokens.radius
+                        color: modelData.connected ? Tokens.accent
+                             : (wma.pressed ? Tokens.outline : Tokens.surfaceVariant)
+                        readonly property color fg: modelData.connected ? Tokens.inkOnAccent : Tokens.ink
+                        readonly property color fgDim: modelData.connected ? Tokens.inkOnAccent : Tokens.inkDim
+                        Row {
+                            anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
+                            spacing: 10
+                            Wifi {
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: 18; height: 18
+                                bars: Sys.Network.strengthOf(wrow.modelData); connected: true
+                                ink: parent.parent.fg
+                            }
+                            Column {
+                                anchors.verticalCenter: parent.verticalCenter
+                                Text { text: wrow.modelData.name; color: parent.parent.parent.fg
+                                       font.pixelSize: Tokens.fontSize * 0.8; font.bold: wrow.modelData.connected }
+                                Text {
+                                    text: wrow.modelData.stateChanging ? "Connecting…"
+                                        : wrow.modelData.connected ? "Connected"
+                                        : (wrow.open ? "Open" : (wrow.modelData.known ? "Saved" : "Secured"))
+                                    color: parent.parent.parent.fgDim; font.pixelSize: Tokens.fontSize * 0.62
+                                }
+                            }
+                        }
+                        Glyph {
+                            visible: !wrow.open && !wrow.modelData.connected
+                            anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
+                            width: 14; height: 14; path: Paths.lock; ink: parent.fgDim
+                        }
+                        MouseArea {
+                            id: wma
+                            anchors.fill: parent
+                            onClicked: {
+                                var n = wrow.modelData
+                                if (n.connected) { Sys.Network.disconnectFrom(n); return }
+                                if (wrow.open || n.known) { root.pskFor = ""; Sys.Network.connectTo(n, ""); return }
+                                root.pskFor = wrow.askPsk ? "" : n.name
+                            }
+                        }
+                    }
+                    // inline password row: a tap on the field raises the OSK (probe green);
+                    // Join or Enter connects, then the row folds away
+                    Rectangle {
+                        visible: wrow.askPsk
+                        width: parent.width
+                        height: visible ? Sys.InputMode.touchTarget : 0
+                        radius: Tokens.radius
+                        color: Tokens.surfaceVariant
+                        border.width: 1; border.color: Tokens.accent
+                        TextInput {
+                            id: psk
+                            anchors { left: parent.left; right: joinBtn.left; leftMargin: 12; rightMargin: 8
+                                      verticalCenter: parent.verticalCenter }
+                            color: Tokens.ink; font.pixelSize: Tokens.fontSize * 0.85
+                            echoMode: TextInput.Password
+                            inputMethodHints: Qt.ImhSensitiveData | Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
+                            onVisibleChanged: if (visible) { text = ""; forceActiveFocus() }
+                            Keys.onReturnPressed: joinBtn.join()
+                            Keys.onEnterPressed:  joinBtn.join()
+                            Keys.onEscapePressed: root.pskFor = ""
+                            Text { anchors.fill: parent; verticalAlignment: Text.AlignVCenter
+                                   visible: psk.text === ""; text: "Password"; color: Tokens.inkDim; font: psk.font }
+                            MouseArea { anchors.fill: parent; onClicked: { psk.forceActiveFocus(); Qt.inputMethod.show() } }
+                        }
+                        Rectangle {
+                            id: joinBtn
+                            anchors { right: parent.right; rightMargin: 6; verticalCenter: parent.verticalCenter }
+                            width: Tokens.fontSize * 3.2; height: parent.height - 12
+                            radius: Tokens.radius
+                            color: psk.text.length >= 8 ? Tokens.accent : Tokens.outline
+                            function join() {
+                                if (psk.text.length < 8) return       // WPA minimum; NM rejects shorter anyway
+                                Sys.Network.connectTo(wrow.modelData, psk.text)
+                                psk.text = ""; root.pskFor = ""
+                            }
+                            Text { anchors.centerIn: parent; text: "Join"; font.pixelSize: Tokens.fontSize * 0.75
+                                   color: psk.text.length >= 8 ? Tokens.inkOnAccent : Tokens.inkDim }
+                            MouseArea { anchors.fill: parent; onClicked: joinBtn.join() }
+                        }
+                    }
+                }
+            }
+
+            // ---- Audio output (step 10) ----
             Text {
                 visible: root.view === "audio"
-                text: Sys.Audio.available ? ("Output: " + (Sys.Audio.sinkName || "default"))
+                text: Sys.Audio.available ? (Sys.Audio.sinks.length === 0 ? "No outputs" : "Output device")
                                           : "No audio device"
                 color: Tokens.inkDim; font.pixelSize: Tokens.fontSize * 0.75
+            }
+            Repeater {
+                model: root.view === "audio" ? Sys.Audio.sinks : []
+                delegate: Rectangle {
+                    id: srow
+                    required property var modelData
+                    readonly property bool current: Sys.Audio.isDefaultSink(modelData)
+                    width: detail.width
+                    height: Sys.InputMode.touchTarget
+                    radius: Tokens.radius
+                    color: current ? Tokens.accent : (sma.pressed ? Tokens.outline : Tokens.surfaceVariant)
+                    Text {
+                        anchors { left: parent.left; leftMargin: 10; right: parent.right; rightMargin: 10
+                                  verticalCenter: parent.verticalCenter }
+                        text: Sys.Audio.sinkLabel(srow.modelData)
+                        color: srow.current ? Tokens.inkOnAccent : Tokens.ink
+                        font.pixelSize: Tokens.fontSize * 0.8; font.bold: srow.current
+                        elide: Text.ElideRight
+                    }
+                    MouseArea { id: sma; anchors.fill: parent; onClicked: Sys.Audio.setDefaultSink(srow.modelData) }
+                }
             }
         }
     }

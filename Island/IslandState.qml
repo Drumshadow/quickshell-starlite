@@ -22,7 +22,8 @@ QtObject {
 
     readonly property var keyboardFocus: ({
         "launcher": "Exclusive",
-        "auth": "Exclusive"
+        "auth": "Exclusive",
+        "control": "OnDemand"      // the Wi-Fi password field must be able to take a tap-focus
         // everything else: None
     })
 
