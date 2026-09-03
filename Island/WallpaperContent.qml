@@ -18,9 +18,11 @@ Item {
 
     readonly property int cols: 3
     readonly property int gap: Sys.InputMode.gutter
-    readonly property int cellW: Math.floor((width - gap * (cols - 1)) / cols)
-    readonly property int thumbW: cellW
-    readonly property int thumbH: Math.round(cellW * 9 / 16)
+    // GridView cells tile edge to edge, so the gutter lives INSIDE the cell:
+    // three cells of width/3 always fit; the tile is the cell minus the gap.
+    readonly property int cellW: Math.floor(width / cols)
+    readonly property int thumbW: cellW - gap
+    readonly property int thumbH: Math.round(thumbW * 9 / 16)
     readonly property int visibleRows: 3
 
     Column {
@@ -70,7 +72,7 @@ Item {
             visible: Sys.Wallpaper.count > 0
             clip: true
             model: Sys.Wallpaper.items
-            cellWidth: root.cellW + root.gap
+            cellWidth: root.cellW
             cellHeight: root.thumbH + root.gap
             cacheBuffer: Math.max(0, root.thumbH * 2)   // modest on this hardware (§5); never negative before layout
             boundsBehavior: Flickable.StopAtBounds
