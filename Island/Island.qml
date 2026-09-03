@@ -33,6 +33,7 @@ PanelWindow {
         // this the first launcher open saw oskNeeded=false (no keyboard) and an
         // empty app list (StarLite, 2026-09-03).
         void(Sys.InputMode.tabletMode); void(Sys.Apps.all)
+        void(Sys.NightLight.running); void(Sys.Notifications.peaceMode); void(Sys.Bluetooth.enabled)
     }
 
     WlrLayershell.namespace: "island"
@@ -125,7 +126,15 @@ PanelWindow {
                  + " bat=" + Sys.Power.percentage + "/" + Sys.Power.state
                  + " net=" + Sys.Network.type
                  + " osk=" + (Sys.Osk.lastResult === "" ? "never" : Sys.Osk.lastResult)
+                 + " bt=" + Sys.Bluetooth.enabled + "/" + Sys.Bluetooth.devices.length + "dev"
+                 + " night=" + Sys.NightLight.running + (Sys.NightLight.available ? "" : "(n/a)")
+                 + " peace=" + Sys.Notifications.peaceMode
+                 + " session=" + (Sys.Session.lastResult === "" ? "never" : Sys.Session.lastResult)
         }
+        // Milestone C backends, drivable without a finger
+        function night(): void { Sys.NightLight.toggle() }
+        function peace(): void { Sys.Notifications.setPeace(!Sys.Notifications.peaceMode) }
+        function bluetooth(on: bool): void { Sys.Bluetooth.setEnabled(on) }
 
         // Drive the launcher without synthetic input. A headless container has
         // no logind seat, so the compositor advertises no input capabilities and

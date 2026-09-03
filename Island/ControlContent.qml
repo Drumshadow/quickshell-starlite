@@ -92,8 +92,9 @@ Item {
                     Tile {
                         width: grid.unit; glyph: Paths.moon
                         label: "Night"
-                        value: "Off"
-                        onToggled: {}       // TODO(real): org.kde.KWin.NightLight
+                        value: Sys.NightLight.running ? "On" : "Off"
+                        active: Sys.NightLight.running
+                        onToggled: Sys.NightLight.toggle()
                     }
                 }
             }
