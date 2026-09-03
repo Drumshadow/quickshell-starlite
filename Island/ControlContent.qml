@@ -53,7 +53,7 @@ Item {
                     width: parent.width
                     spacing: Sys.InputMode.gutter
                     Tile {
-                        width: grid.unit; glyph: Paths.search
+                        width: grid.unit; glyph: Paths.wifi
                         label: "Wi-Fi"
                         value: Sys.Network.connected ? (Sys.Network.ssid || "On") : "Off"
                         active: Sys.Network.connected
@@ -75,7 +75,7 @@ Item {
                     width: parent.width
                     spacing: Sys.InputMode.gutter
                     Tile {
-                        width: grid.unit; glyph: Paths.moon
+                        width: grid.unit; glyph: Paths.bluetooth
                         label: "Bluetooth"
                         value: Sys.Bluetooth.enabled ? (Sys.Bluetooth.connectedCount + " conn") : "Off"
                         active: Sys.Bluetooth.enabled
@@ -84,7 +84,7 @@ Item {
                         onDetail: root.view = "bluetooth"
                     }
                     Tile {
-                        width: grid.unit; glyph: Paths.close
+                        width: grid.unit; glyph: Paths.bellOff
                         label: "Peace"
                         value: Sys.Notifications.peaceMode ? "On" : "Off"
                         active: Sys.Notifications.peaceMode

@@ -124,7 +124,7 @@ PanelWindow {
                  + " tray="  + Sys.Tray.count
                  + " | vol=" + Sys.Audio.volume.toFixed(2)
                  + " bat=" + Sys.Power.percentage + "/" + Sys.Power.state
-                 + " net=" + Sys.Network.type
+                 + " net=" + Sys.Network.type + "/" + Sys.Network.ssid + "/" + Sys.Network.strength
                  + " osk=" + (Sys.Osk.lastResult === "" ? "never" : Sys.Osk.lastResult)
                  + " bt=" + Sys.Bluetooth.enabled + "/" + Sys.Bluetooth.devices.length + "dev"
                  + " night=" + Sys.NightLight.running + (Sys.NightLight.available ? "" : "(n/a)")

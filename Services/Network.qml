@@ -28,16 +28,28 @@ QtObject {
     readonly property bool connected:
         Env.mock ? Mock.wifiConnected
                  : ((_wifi && _wifi.connected) || (_wired && _wired.connected) || false)
+    // The connected WifiNetwork on the wifi device: its `name` is the SSID and
+    // `signalStrength` the live AP strength. `_wifi.name` is the INTERFACE
+    // (wlp0s20f3 on the StarLite), which is what the tile showed until 2026-09-03.
+    readonly property var _active: {
+        if (!_wifi || !_wifi.networks) return null
+        var v = _wifi.networks.values
+        for (var i = 0; i < v.length; i++) if (v[i] && v[i].connected) return v[i]
+        return null
+    }
     readonly property string ssid:
-        Env.mock ? Mock.ssid : (_wifi && _wifi.name ? _wifi.name : "")
+        Env.mock ? Mock.ssid : (_active && _active.name ? _active.name : "")
     readonly property string type:
         !connected ? "none" : (_wired && _wired.connected ? "wired" : "wifi")
 
-    // TODO(hardware): per-AP signal strength. Confirm what Networking exposes on
-    // the real machine; quantise HERE regardless — NM churns constantly and a raw
-    // binding re-animates a Shape for changes nobody can perceive.
+    // Quantised HERE regardless of source -- NM churns constantly and a raw
+    // binding re-animates a Shape for changes nobody can perceive. signalStrength
+    // is a double; treat <=1 as a fraction, otherwise as a percentage.
     readonly property int strength:
-        Env.mock ? Mock.wifiStrength : (connected ? 4 : 0)
+        Env.mock ? Mock.wifiStrength
+                 : (!connected ? 0
+                    : (_active ? quantise(_active.signalStrength <= 1 ? _active.signalStrength * 100 : _active.signalStrength)
+                               : 4))
 
     function quantise(pct) {
         if (pct <= 0) return 0
