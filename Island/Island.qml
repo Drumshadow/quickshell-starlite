@@ -35,6 +35,7 @@ PanelWindow {
         void(Sys.InputMode.tabletMode); void(Sys.Apps.all)
         void(Sys.NightLight.running); void(Sys.Notifications.peaceMode); void(Sys.Bluetooth.enabled)
         void(Sys.Wallpaper.count)      // the library scan runs once, at startup, not on first open
+        void(Sys.Polkit.registered)    // register the auth agent at startup, not on first prompt
     }
 
     WlrLayershell.namespace: "island"
@@ -84,6 +85,20 @@ PanelWindow {
         function toggle(): void { IslandState.toggle("launcher") }
         function open(): void   { IslandState.request("launcher") }
         function close(): void  { if (IslandState.current === "launcher") IslandState.release() }
+    }
+
+    IpcHandler {
+        target: "polkit"
+        function state(): string {
+            return "registered=" + Sys.Polkit.registered + " active=" + Sys.Polkit.active
+                 + " responseRequired=" + Sys.Polkit.responseRequired + " failed=" + Sys.Polkit.failed
+                 + " completed=" + Sys.Polkit.completed + " identity=" + Sys.Polkit.identity
+                 + " ids=" + Sys.Polkit.identities.length + " island=" + IslandState.current
+                 + " | " + Sys.Polkit.actionId + " | " + Sys.Polkit.message
+        }
+        function cancel(): void { Sys.Polkit.cancel() }
+        // dev only (polkit-dev file at startup): the wrong-password path. Never a real password.
+        function submit(text: string): void { if (Sys.Polkit.devMode) Sys.Polkit.submit(text) }
     }
 
     IpcHandler {
@@ -230,6 +245,7 @@ PanelWindow {
                 case "expanded": return "ExpandedContent.qml"
                 case "osd":      return "OsdContent.qml"
                 case "launcher": return "LauncherContent.qml"
+                case "auth":     return "AuthContent.qml"
                 case "control":  return "ControlContent.qml"
                 case "theme":    return "ThemeContent.qml"
                 case "power":    return "PowerContent.qml"
@@ -246,6 +262,10 @@ PanelWindow {
                     if (item.screenHeight !== undefined && win.screen) item.screenHeight = win.screen.height
                     // a layer surface having keyboard focus is not enough — the
                     // field inside it must take ACTIVE focus or keystrokes go nowhere
+                    if (item.focusInput) item.focusInput()
+                }
+                if (IslandState.current === "auth" && item) {
+                    item.dismissed.connect(function () { Sys.Polkit.cancel() })
                     if (item.focusInput) item.focusInput()
                 }
                 if ((IslandState.current === "control" || IslandState.current === "settings") && item)
@@ -268,12 +288,22 @@ PanelWindow {
         height: 20
     }
 
-    // tap-outside dismiss, only while a panel is open — never swallows clicks at rest
+    // tap-outside dismiss, only while a panel is open — never swallows clicks at rest.
+    // For the polkit card tap-outside CANCELS the flow (polkit §2: fail closed).
     MouseArea {
         anchors.fill: parent
         z: -1
-        enabled: win.panelOpen && IslandState.current !== "auth"
-        onClicked: IslandState.release()
+        enabled: win.panelOpen
+        onClicked: if (IslandState.current === "auth") Sys.Polkit.cancel(); else IslandState.release()
+    }
+
+    // polkit §5: a request always preempts; the previous state is restored after
+    Connections {
+        target: Sys.Polkit
+        function onActiveChanged() {
+            if (Sys.Polkit.active) IslandState.request("auth")
+            else if (IslandState.current === "auth") IslandState.release()
+        }
     }
 
     // ---- input mask --------------------------------------------------------

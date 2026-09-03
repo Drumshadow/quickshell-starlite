@@ -15,3 +15,4 @@ singleton Tray 1.0 Tray.qml
 singleton Wallpaper 1.0 Wallpaper.qml
 singleton Osk 1.0 Osk.qml
 singleton NightLight 1.0 NightLight.qml
+singleton Polkit 1.0 Polkit.qml
