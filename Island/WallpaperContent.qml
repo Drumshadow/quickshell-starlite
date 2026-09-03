@@ -72,7 +72,7 @@ Item {
             model: Sys.Wallpaper.items
             cellWidth: root.cellW + root.gap
             cellHeight: root.thumbH + root.gap
-            cacheBuffer: root.thumbH * 2          // modest on this hardware (§5)
+            cacheBuffer: Math.max(0, root.thumbH * 2)   // modest on this hardware (§5); never negative before layout
             boundsBehavior: Flickable.StopAtBounds
             delegate: Item {
                 required property var modelData

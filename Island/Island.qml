@@ -34,6 +34,7 @@ PanelWindow {
         // empty app list (StarLite, 2026-09-03).
         void(Sys.InputMode.tabletMode); void(Sys.Apps.all)
         void(Sys.NightLight.running); void(Sys.Notifications.peaceMode); void(Sys.Bluetooth.enabled)
+        void(Sys.Wallpaper.count)      // the library scan runs once, at startup, not on first open
     }
 
     WlrLayershell.namespace: "island"
