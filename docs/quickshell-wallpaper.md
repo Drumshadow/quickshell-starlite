@@ -184,18 +184,14 @@ Steps 1–4 are a complete, usable picker.
 - [ ] Island never unmaps entering/leaving `"wallpaper"` (503121 regression check)
 - [ ] Legible in `e-ink` — check the accent ring against light thumbnails specifically
 
-## 10. Open questions
+## 10. Open questions — answered on hardware 2026-09-03
 
-1. Is the header's collection name tappable in the source, or a passive label? Inferred as a
-   selector from [09:20]'s "go to gruvbox"; either way a selector is the right build.
-2. Does `plasma-apply-wallpaperimage` apply to all containments/screens, or only the current
-   one? Irrelevant on a single-panel tablet; note in case a monitor is ever attached.
-3. Does it apply live, or need a plasmashell reload? Live is assumed — verify, it changes
-   whether §1's "instant change" holds.
-4. Should a wallpaper change also update the **lock screen** background? Plasma keeps them
-   separate. Probably yes for coherence; a second `plasma-apply-*` call or a kscreenlockerrc write.
-5. Animated wallpapers — the source's library is static images. Out of scope, and a video
-   wallpaper on this battery is a bad idea regardless (parent §3.5).
+1. Built as a selector: the header chip cycles collections (`all` first).
+2. Single panel; untested with a second screen.
+3. **Live.** `plasma-apply-wallpaperimage` swaps the desktop immediately, no reload.
+4. **Yes** — the picker also writes kscreenlockerrc `[Greeter][Wallpaper][org.kde.image][General]
+   Image=` (plain path) so the lock screen follows.
+5. Out of scope, as written.
 
 ## 11. Dependencies
 

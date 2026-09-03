@@ -231,23 +231,26 @@ the OSD is finished. Steps 3–4 can wait; step 7 is cosmetic and can be last.
 - [ ] Transition completes in ~200 ms and does not stutter on this hardware
 - [ ] Island never unmaps entering/leaving `"theme"` (503121 regression check)
 
-## 12. Open questions
+## 12. Open questions — answered on hardware 2026-09-03
 
-1. Which of the 18 are wallust built-ins and which need authoring? Cheapest to answer with
-   `wallust theme --help` / its theme list on hardware. Authoring a missing scheme is small;
-   authoring six is not.
-   **Scope decided 2026-08-23:** build the derivation (§3) to handle *all* 18, but **populate
-   only three at first** — one dark, `e-ink` for light, and one saturated-accent scheme. The
-   contrast audit (§8) is per-theme work, and you want it passing on a small set before scaling.
-   Adding the remaining fifteen afterwards is a data task, not a code one.
-2. Is `material-you` wallpaper-derived (§7)? If so it depends on §1.9 and should be deferred.
-3. Does `plasma-apply-colorscheme` require a Plasma restart or apply live? Live is assumed;
-   verify, because it changes whether §5 feels instant.
-4. Measure the `wallust theme` round trip. If it exceeds ~150 ms, consider applying the shell's
-   own tokens optimistically before wallust returns — **measure before adding that complexity.**
-5. Does wallust have a Fedora package, or is it `cargo install`? Affects parent §2's dependency list.
-6. Should the wallpaper change with the theme (the source's does)? That couples §1.8 and §1.9;
-   decide when §1.9 is specced.
+1. **All built-ins except Ariadne.** wallust 3.5.2 ships 616 themes; the 18 chosen are
+   Nord, Nord-Light, Gruvbox-Dark, Gruvbox-Material-Light, Tokyo-Night(-Light),
+   Catppuccin-Mocha/Latte, Dracula, Everforest-Dark/Light-Medium, Kanagawa-Wave/Lotus,
+   One-Dark, Solarized-Dark/Light, Oxocarbon-Dark, Paper. Ariadne is a pywal-format JSON
+   applied with `wallust cs` (tools/tablet/wallust/colorschemes/ariadne.json). No Rose Pine
+   in wallust's bundle. The contrast audit ran across all 19 and found 10 failures under the
+   original lum<0.35 ink rule — see §3's derivation notes in Config/Tokens.qml.
+2. **Yes, `material-you` is wallpaper-derived.** Built as the "From wallpaper" swatch: inert
+   until a long-press on a wallpaper thumbnail runs `wallust run <image>`; then it previews the
+   token file. Deferred no longer — wallpaper §3 is on hardware.
+3. **Live.** `plasma-apply-colorscheme` repaints running Qt/KDE apps immediately. It needs a
+   QPA (from a bare SSH shell set `QT_QPA_PLATFORM=offscreen`, else exit 250 with no message).
+4. **3 ms** for `wallust theme` end to end on the StarLite (full backend, lab). Plus the
+   post step and reload the swap lands well under a second; no optimistic apply needed.
+5. **Neither.** No Fedora package and no cargo on the tablet; the static
+   `x86_64-unknown-linux-musl` release binary from Codeberg goes to `~/.local/bin`.
+6. **Theme → collection only** (wallpaper §3). Picking a theme selects a same-named wallpaper
+   collection when one exists; picking a wallpaper never changes the palette.
 
 ## 13. Dependencies
 
