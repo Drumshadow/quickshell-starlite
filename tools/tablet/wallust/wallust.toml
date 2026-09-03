@@ -1,0 +1,10 @@
+# Quickshell StarLite — wallust is the source of truth for colour (theming §1).
+# `wallust theme <Name>` (or `wallust cs <file>`) renders these; the shell then
+# runs starlite-theme-post, which derives the Plasma colour scheme and applies it.
+backend = "full"
+color_space = "lab"
+palette = "dark16"
+check_contrast = true
+
+[templates]
+tokens = { template = "tokens.json", target = "~/.config/quickshell-starlite/tokens.json" }

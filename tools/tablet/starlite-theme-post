@@ -1,0 +1,102 @@
+#!/usr/bin/env python3
+"""Post step after `wallust theme`: derive a Plasma colour scheme from the shell's
+token file and apply it (theming §5). Same five inputs and the same luminance rule
+as Config/Tokens.qml, so the shell and every Qt/KDE app agree."""
+import json, os, subprocess, sys
+
+TOK = os.path.expanduser("~/.config/quickshell-starlite/tokens.json")
+OUT = os.path.expanduser("~/.local/share/color-schemes/Starlite.colors")
+
+def hex2rgb(h):
+    h = h.lstrip("#"); return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
+def lin(v):
+    v /= 255.0; return v/12.92 if v <= 0.03928 else ((v+0.055)/1.055)**2.4
+def lum(c): return 0.2126*lin(c[0]) + 0.7152*lin(c[1]) + 0.0722*lin(c[2])
+def mix(a, b, t): return tuple(round(a[i] + (b[i]-a[i])*t) for i in range(3))
+def s(c): return "%d,%d,%d" % c
+
+t = json.load(open(TOK))
+bg, fg = hex2rgb(t["background"]), hex2rgb(t["foreground"])
+accent, crit, ok = hex2rgb(t["accent"]), hex2rgb(t["critical"]), hex2rgb(t["success"])
+cols = [hex2rgb(c) for c in t.get("colors", [])] or [bg]*16
+dark = lum(bg) < 0.35
+W, K = (255,255,255), (0,0,0)
+lift = (lambda c, x: mix(c, W, x)) if dark else (lambda c, x: mix(c, K, x))
+ink_light, ink_dark = (245,242,240), (13,17,16)
+ink = ink_light if dark else ink_dark
+ink_dim = mix(bg, ink, 0.62)
+surface_variant = lift(bg, 0.08 if dark else 0.07)
+button = lift(bg, 0.12 if dark else 0.09)
+header = lift(bg, 0.05 if dark else 0.04)
+on_accent = ink_light if lum(accent) < 0.35 else ink_dark
+neutral = cols[3] if len(cols) > 3 else (246,116,0)
+link = cols[6] if len(cols) > 6 else accent
+visited = cols[5] if len(cols) > 5 else accent
+
+def group(name, bgn, bga, fgn):
+    return f"""[{name}]
+BackgroundAlternate={s(bga)}
+BackgroundNormal={s(bgn)}
+DecorationFocus={s(accent)}
+DecorationHover={s(accent)}
+ForegroundActive={s(accent)}
+ForegroundInactive={s(ink_dim)}
+ForegroundLink={s(link)}
+ForegroundNegative={s(crit)}
+ForegroundNeutral={s(neutral)}
+ForegroundNormal={s(fgn)}
+ForegroundPositive={s(ok)}
+ForegroundVisited={s(visited)}
+"""
+
+parts = ["""[ColorEffects:Disabled]
+Color=56,56,56
+ColorAmount=0
+ColorEffect=0
+ContrastAmount=0.65
+ContrastEffect=1
+IntensityAmount=0.1
+IntensityEffect=2
+
+[ColorEffects:Inactive]
+ChangeSelectionColor=true
+Color=112,111,110
+ColorAmount=0.025
+ColorEffect=2
+ContrastAmount=0.1
+ContrastEffect=2
+Enable=false
+IntensityAmount=0
+IntensityEffect=0
+""",
+ group("Colors:Button", button, lift(button, 0.06), ink),
+ group("Colors:Complementary", bg, surface_variant, ink),
+ group("Colors:Header", header, lift(header, 0.06), ink),
+ group("Colors:Header][Inactive", header, lift(header, 0.06), ink),
+ group("Colors:Selection", accent, mix(accent, bg, 0.2), on_accent),
+ group("Colors:Tooltip", surface_variant, lift(surface_variant, 0.06), ink),
+ group("Colors:View", bg, surface_variant, ink),
+ group("Colors:Window", surface_variant, lift(surface_variant, 0.06), ink),
+ f"""[General]
+ColorScheme=Starlite
+Name=Starlite
+shadeSortColumn=true
+AccentColor={s(accent)}
+
+[KDE]
+contrast=4
+
+[WM]
+activeBackground={s(header)}
+activeBlend={s(ink)}
+activeForeground={s(ink)}
+inactiveBackground={s(bg)}
+inactiveBlend={s(ink_dim)}
+inactiveForeground={s(ink_dim)}
+"""]
+os.makedirs(os.path.dirname(OUT), exist_ok=True)
+tmp = OUT + ".tmp"
+open(tmp, "w").write("\n".join(parts)); os.replace(tmp, OUT)
+r = subprocess.run(["plasma-apply-colorscheme", OUT], capture_output=True, text=True)
+print(r.stdout.strip() or r.stderr.strip())
+sys.exit(r.returncode)
