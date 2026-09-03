@@ -9,3 +9,4 @@ ThemeContent 1.0 ThemeContent.qml
 PowerContent 1.0 PowerContent.qml
 SettingsContent 1.0 SettingsContent.qml
 WallpaperContent 1.0 WallpaperContent.qml
+AuthContent 1.0 AuthContent.qml
