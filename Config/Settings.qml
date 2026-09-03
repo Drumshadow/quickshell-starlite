@@ -15,6 +15,12 @@ QtObject {
     property int barHeight: 30
     property int fontSize:  16
 
+    // Share of the screen height the on-screen keyboard covers when it is up.
+    // Plasma Keyboard does not report Qt.inputMethod.keyboardRectangle on this
+    // stack (OSK probe, 2026-09-03: 0x0 with the keyboard drawn), so the launcher
+    // sizes against this instead when oskNeeded. Calibration slider later.
+    property real oskFraction: 0.38
+
     function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)) }
     function setBar(v)  { barHeight = clamp(Math.round(v), barMin, barMax) }
     function setFont(v) { fontSize  = clamp(Math.round(v), fontMin, fontMax) }

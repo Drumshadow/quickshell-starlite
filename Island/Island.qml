@@ -71,6 +71,15 @@ PanelWindow {
         onTriggered: if (IslandState.current === "osd") IslandState.release()
     }
 
+    // launcher §2: the KDE global shortcut (Alt+D) calls `qs ipc call launcher toggle`.
+    // Thin alias over the island state machine so the spec's command works verbatim.
+    IpcHandler {
+        target: "launcher"
+        function toggle(): void { IslandState.toggle("launcher") }
+        function open(): void   { IslandState.request("launcher") }
+        function close(): void  { if (IslandState.current === "launcher") IslandState.release() }
+    }
+
     // ---- IPC: one target, per island-core §9 -------------------------------
     IpcHandler {
         target: "island"
@@ -168,6 +177,8 @@ PanelWindow {
                 if (IslandState.current === "osd" && item) item.kind = win.osdKind
                 if (IslandState.current === "launcher" && item) {
                     item.launched.connect(function () { IslandState.release() })
+                    if (item.dismissed) item.dismissed.connect(function () { IslandState.release() })
+                    if (item.screenHeight !== undefined && win.screen) item.screenHeight = win.screen.height
                     // a layer surface having keyboard focus is not enough — the
                     // field inside it must take ACTIVE focus or keystrokes go nowhere
                     if (item.focusInput) item.focusInput()
