@@ -11,8 +11,10 @@ QtObject {
 
     readonly property bool available: Env.mock ? true : _present
 
+    // UPowerDevice.percentage is 0..1 on the real module (verified on the StarLite,
+    // 2026-09-03: 0.55 for 55%). The container harness never had a device to prove it.
     readonly property int percentage:
-        Env.mock ? Mock.batteryPercent : (_present ? Math.round(_dev.percentage) : 0)
+        Env.mock ? Mock.batteryPercent : (_present ? Math.round(_dev.percentage * 100) : 0)
     readonly property bool acConnected:
         Env.mock ? Mock.acConnected : !UPower.onBattery
     readonly property int timeToEmpty:

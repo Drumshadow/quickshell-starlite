@@ -17,9 +17,15 @@ QtObject {
 
     // NeedsAttention must escape the control centre — an attention state nobody
     // sees because it is two taps deep is useless.
+    // Quickshell 0.3.1 exposes the SNI status enum as `Status` (Passive=0, Active=1,
+    // NeedsAttention=2); `SystemTrayStatus` was a ReferenceError on the StarLite and
+    // silently disabled the whole binding. Resolve the enum defensively so a rename in
+    // either direction degrades to the numeric value instead of killing the property.
+    readonly property int _needsAttentionValue:
+        (typeof Status !== "undefined" && Status.NeedsAttention !== undefined) ? Status.NeedsAttention : 2
     readonly property bool needsAttention: {
         for (var i = 0; i < items.length; i++)
-            if (items[i] && items[i].status === SystemTrayStatus.NeedsAttention) return true
+            if (items[i] && items[i].status === _needsAttentionValue) return true
         return false
     }
 

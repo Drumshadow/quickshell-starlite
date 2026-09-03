@@ -19,6 +19,18 @@ PanelWindow {
     color: "transparent"
     implicitHeight: 560
 
+    // Warm the service singletons at startup. They are lazy: nothing on the rest
+    // surface references Power/Network/Tray, so on hardware their UPower /
+    // NetworkManager / SNI connections only began on the first expand -- and the
+    // expanded view then showed placeholders for ~20-30 s (StarLite, 2026-09-03).
+    // Reading one property each is enough to instantiate them; the values are
+    // discarded on purpose.
+    Component.onCompleted: {
+        void(Sys.Power.available); void(Sys.Network.available)
+        void(Sys.Tray.count);      void(Sys.Backlight.value)
+        void(Sys.Media.available)
+    }
+
     WlrLayershell.namespace: "island"
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus:
