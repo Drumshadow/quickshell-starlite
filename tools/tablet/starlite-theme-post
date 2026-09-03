@@ -5,7 +5,17 @@ as Config/Tokens.qml, so the shell and every Qt/KDE app agree."""
 import json, os, subprocess, sys
 
 TOK = os.path.expanduser("~/.config/quickshell-starlite/tokens.json")
-OUT = os.path.expanduser("~/.local/share/color-schemes/Starlite.colors")
+# plasma-apply-colorscheme does NOTHING when the requested scheme NAME is already
+# current (it never re-reads the file), so alternate between two names -- found on
+# the StarLite 2026-09-03 with kdeglobals stuck on the previous theme's colours.
+def _current_name():
+    try:
+        for ln in open(os.path.expanduser("~/.config/kdeglobals")):
+            if ln.startswith("ColorScheme="): return ln.strip().split("=", 1)[1]
+    except OSError: pass
+    return ""
+NAME = "Starlite2" if _current_name() == "Starlite" else "Starlite"
+OUT = os.path.expanduser(f"~/.local/share/color-schemes/{NAME}.colors")
 
 def hex2rgb(h):
     h = h.lstrip("#"); return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
@@ -88,8 +98,8 @@ IntensityEffect=0
  group("Colors:View", bg, surface_variant, ink),
  group("Colors:Window", surface_variant, lift(surface_variant, 0.06), ink),
  f"""[General]
-ColorScheme=Starlite
-Name=Starlite
+ColorScheme={NAME}
+Name={NAME}
 shadeSortColumn=true
 AccentColor={s(accent)}
 
