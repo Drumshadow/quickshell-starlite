@@ -75,7 +75,7 @@ QtObject {
         // §10 q4: keep the lock screen coherent -- Plasma stores it separately
         _apply.command = ["sh", "-c",
             "plasma-apply-wallpaperimage " + _quote(path) +
-            " && kwriteconfig6 --file kscreenlockerrc --group Greeter --group Wallpaper --group org.kde.image --group General --key Image " + _quote("file://" + path)]
+            " && kwriteconfig6 --file kscreenlockerrc --group Greeter --group Wallpaper --group org.kde.image --group General --key Image " + _quote(path)]   // plain path: Plasma accepts it, and "file:" + "//" would read as a comment to lint
         _apply.running = true
     }
     function rescan() { if (!Env.mock) { _scan.running = true; _readCurrent.running = true } }
