@@ -343,8 +343,21 @@ These gate the design and none can be settled without the tablet:
    workaround path, and carries an ordinary-window control to separate "layer surfaces
    can't do IM" from "Quickshell can't". Detach the folio first; Plasma may suppress the
    OSK while a physical keyboard is present. Record the outcome back here.
+   **VERDICT 2026-09-03 — GREEN.** Run on the real StarLite (Fedora 44, Plasma 6.7.4,
+   Quickshell 0.3.1, Plasma Keyboard as KWin's virtual keyboard, folio detached): the OSK
+   raised on tap in **all three** focus modes (None, OnDemand, Exclusive) and text arrived
+   over `text-input-v3` in both the plain and the password field (`text received: "Hi"`).
+   Build §1.6 and §1.13 as specced. Two consequences to carry forward:
+   - `Qt.inputMethod.visible` stayed **false** and `keyboardRectangle` was **0×0** while the
+     keyboard was on screen — Plasma Keyboard does not feed Qt's IM state. So there is no
+     keyboard-avoidance signal: **keep every input-taking surface top-anchored** (the island
+     already is) and never wait on `Qt.inputMethod.visible` for layout or logic.
+   - Set `focusable: true` on every input-taking surface anyway (cheap, and the default is
+     false); the probe passing at None on this stack is not a guarantee for every KWin.
 2. Does the OSK overlap or push the island? It appears at the bottom, the island at the
-   top, so it should be fine — confirm.
+   top, so it should be fine — confirm. *(2026-09-03: consistent with the probe — the
+   keyboard drew at the bottom under a top-anchored Overlay surface; item 1's note above
+   says why the rectangle cannot be read programmatically.)*
 3. Actual physical size of 48 px after tablet-mode scaling. Measure; do not assume.
 4. Do edge-swipe input regions on a layer surface conflict with KWin's own edge gestures?
 
