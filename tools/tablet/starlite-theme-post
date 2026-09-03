@@ -112,4 +112,6 @@ if not env.get("WAYLAND_DISPLAY") and not env.get("DISPLAY"):
     env["QT_QPA_PLATFORM"] = "offscreen"      # from a bare SSH shell: apply still needs a QPA
 r = subprocess.run(["plasma-apply-colorscheme", OUT], capture_output=True, text=True, env=env)
 print(r.stdout.strip() or r.stderr.strip())
+# the login greeter follows (Plasma Login Manager reads the greeter account's kdeglobals)
+subprocess.run([os.path.expanduser("~/.local/bin/starlite-login-sync")], capture_output=True, text=True)
 sys.exit(r.returncode)

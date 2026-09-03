@@ -1,0 +1,56 @@
+#!/usr/bin/env python3
+"""Sync the shell's theme to the Plasma Login Manager greeter account, the way
+System Settings' "Apply Plasma Settings" does: the greeter reads
+/var/lib/plasmalogin/.config/kdeglobals with the colour scheme INLINED (that is
+what plasma-apply-colorscheme writes for the user too). Needs passwordless sudo.
+Reversible: the first run keeps kdeglobals.starlite-backup next to the file.
+    starlite-login-sync                 # colours from ~/.config/kdeglobals
+    starlite-login-sync --wallpaper P   # also point the greeter's lock-style
+                                        # wallpaper config at P (best effort)
+"""
+import os, re, subprocess, sys, tempfile
+
+GREETER = "/var/lib/plasmalogin"
+SYNC_GROUPS = re.compile(r"^\[(ColorEffects:[^\]]+|Colors:[^\]]+(\]\[Inactive)?|General|WM)\]$")
+
+def parse(text):
+    groups, cur, order = {}, None, []
+    for ln in text.splitlines():
+        if ln.startswith("["):
+            cur = ln.strip(); order.append(cur); groups.setdefault(cur, [])
+        elif cur is not None:
+            groups[cur].append(ln)
+    return groups, order
+
+def sudo(args, inp=None):
+    return subprocess.run(["sudo", "-n"] + args, input=inp, capture_output=True, text=True)
+
+user = open(os.path.expanduser("~/.config/kdeglobals")).read()
+ug, _ = parse(user)
+cur = sudo(["cat", f"{GREETER}/.config/kdeglobals"])
+gtext = cur.stdout if cur.returncode == 0 else ""
+gg, gorder = parse(gtext)
+if gtext and sudo(["test", "-f", f"{GREETER}/.config/kdeglobals.starlite-backup"]).returncode != 0:
+    sudo(["cp", "-a", f"{GREETER}/.config/kdeglobals", f"{GREETER}/.config/kdeglobals.starlite-backup"])
+
+for g, lines in ug.items():
+    if SYNC_GROUPS.match(g):
+        if g == "[General]":   # only the colour keys, never fonts/locale
+            keep = [l for l in lines if l.split("=")[0] in ("ColorScheme", "ColorSchemeHash", "AccentColor")]
+            others = [l for l in gg.get(g, []) if l.split("=")[0] not in ("ColorScheme", "ColorSchemeHash", "AccentColor")]
+            gg[g] = others + keep
+        else:
+            gg[g] = list(lines)
+        if g not in gorder: gorder.append(g)
+out = "\n".join(f"{g}\n" + "\n".join(l for l in gg[g] if l.strip() != "") for g in gorder) + "\n"
+r = sudo(["tee", f"{GREETER}/.config/kdeglobals"], inp=out)
+if r.returncode != 0: print("kdeglobals write failed:", r.stderr.strip()); sys.exit(1)
+sudo(["chown", "plasmalogin:plasmalogin", f"{GREETER}/.config/kdeglobals"])
+
+if "--wallpaper" in sys.argv:
+    wp = sys.argv[sys.argv.index("--wallpaper") + 1]
+    # best effort: the greeter is kscreenlocker-derived; unverified which rc it honours
+    for rc in ("kscreenlockerrc",):
+        sudo(["-u", "plasmalogin", "kwriteconfig6", "--file", f"{GREETER}/.config/{rc}", "--group", "Greeter",
+              "--group", "Wallpaper", "--group", "org.kde.image", "--group", "General", "--key", "Image", wp])
+print("login greeter synced")
