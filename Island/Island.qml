@@ -88,7 +88,8 @@ PanelWindow {
 
     IpcHandler {
         target: "settings"
-        function show(): string {
+        // ("show" is swallowed by the qs ipc client and prints the target listing)
+        function state(): string {
             return "bar=" + Settings.barHeight + " font=" + Settings.fontSize + " osk=" + Settings.oskFraction
                  + " loaded=" + Settings.loaded + " tokensFont=" + Tokens.fontSize
         }
