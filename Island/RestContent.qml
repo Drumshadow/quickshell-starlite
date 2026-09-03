@@ -1,11 +1,14 @@
 import QtQuick
 import "../Config"
+import "../Services" as Sys
 
 // island-core §6 (as corrected 2026-08-23): the pill is the TIME ONLY, plus
 // animated EQ bars while something is playing. There is NO status glyph here.
 Item {
     id: root
-    property bool playing: false
+    // bound to the service by default (was a literal `false`, so the bars could
+    // never appear on hardware); overridable by the gallery / mock harness.
+    property bool playing: Sys.Media.playing
     implicitWidth: row.implicitWidth + Tokens.fontSize * 1.6
     implicitHeight: Settings.barHeight
 

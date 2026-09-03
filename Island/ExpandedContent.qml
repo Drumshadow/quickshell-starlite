@@ -1,18 +1,24 @@
 import QtQuick
 import "../Config"
 import "../Icons"
+import "../Services" as Sys
 
 // island-core §7: three zones. Portrait needs an explicit variant — a
 // horizontal three-zone row does not fit a portrait 3:2 panel (parent §3.1.7).
+//
+// Defaults bind to the services (the single source of truth); they stay plain
+// properties so the gallery / mock harness can override them. The literal
+// placeholders that were here (80%, 3 bars) shipped to the real tablet and showed
+// "80" next to a 63% battery — StarLite, 2026-09-03.
 Item {
     id: root
-    property bool playing: false
-    property string title: ""
-    property string artist: ""
-    property int batteryPercent: 80
-    property string batteryState: "Discharging"
-    property int wifiBars: 3
-    property bool wifiConnected: true
+    property bool playing: Sys.Media.playing
+    property string title: Sys.Media.title
+    property string artist: Sys.Media.artist
+    property int batteryPercent: Sys.Power.percentage
+    property string batteryState: Sys.Power.state
+    property int wifiBars: Sys.Network.strength
+    property bool wifiConnected: Sys.Network.connected
 
     implicitWidth: Tokens.fontSize * 22
     implicitHeight: Tokens.fontSize * 3.4
