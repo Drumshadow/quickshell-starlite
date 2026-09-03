@@ -15,8 +15,16 @@ Item {
         width: parent.width
         spacing: 8
 
-        Text { text: "Theme"; color: Tokens.ink
-               font.pixelSize: Tokens.fontSize; font.bold: true }
+        Row {
+            width: parent.width
+            Text { text: "Theme"; color: Tokens.ink
+                   font.pixelSize: Tokens.fontSize; font.bold: true }
+            Item { width: parent.width - 60 - applyState.width; height: 1 }
+            Text { id: applyState
+                   text: Themes.applying ? "Applying…" : (Themes.error !== "" ? Themes.error : "")
+                   color: Themes.error !== "" ? Tokens.critical : Tokens.inkDim
+                   font.pixelSize: Tokens.fontSize * 0.65 }
+        }
 
         Grid {
             width: parent.width
@@ -47,11 +55,12 @@ Item {
                         }
                         Text {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            text: modelData.id
+                            text: modelData.label !== undefined ? modelData.label : modelData.id
                             color: modelData.fg
                             font.pixelSize: Tokens.fontSize * 0.62
                         }
                     }
+                    opacity: Themes.applying && Themes.current !== modelData.id ? 0.6 : 1
                     MouseArea { anchors.fill: parent; onClicked: Themes.set(modelData.id) }
                 }
             }

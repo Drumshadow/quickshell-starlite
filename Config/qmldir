@@ -1,3 +1,4 @@
 singleton Tokens 1.0 Tokens.qml
 singleton Settings 1.0 Settings.qml
 singleton Themes 1.0 Themes.qml
+singleton ThemePreviews 1.0 ThemePreviews.qml

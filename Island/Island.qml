@@ -108,6 +108,11 @@ PanelWindow {
         }
         function lastAction(): string { return Sys.Session.lastAction }
         function themes(): string { return Themes.names() + " | current=" + Themes.current }
+        function themeState(): string {
+            return "current=" + Themes.current + " applying=" + Themes.applying
+                 + " file=" + Themes.fileValid + " bg=" + Tokens.background + " accent=" + Tokens.accent
+                 + (Themes.error !== "" ? " error=" + Themes.error : "")
+        }
         function contrast(): string {
             return "ink=" + Tokens.cOnSurface.toFixed(2)
                  + " dim=" + Tokens.cOnSurfaceDim.toFixed(2)

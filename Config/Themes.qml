@@ -1,36 +1,99 @@
 pragma Singleton
 import QtQuick
+import Quickshell
+import Quickshell.Io
+import "../Services" as Sys
 
-// Palette registry. Only the RAW inputs live here; every semantic token is
-// derived in Tokens.qml, so a new palette is four colours and nothing else.
+// Theme registry + the wallust pipeline (docs/quickshell-theming.md §1, §4, §9).
 //
-// Three to start, deliberately (docs/quickshell-theming.md §12 q1): one dark,
-// one light, one saturated-accent. The contrast audit is per-theme work — get
-// it passing on a small set, then scale. The remaining schemes are a data task.
+// wallust is the source of truth: `set(id)` runs the theme's wallust command,
+// which renders ~/.config/quickshell-starlite/tokens.json, then
+// starlite-theme-post derives + applies the Plasma colour scheme. On exit 0 the
+// shell reloads the token file and every binding follows. On failure nothing
+// changes -- never half-apply.
+//
+// ThemePreviews (generated on the tablet from wallust's own output) gives the
+// swatch grid each theme's colours without applying it, and doubles as the
+// compiled-in FALLBACK palette: if the token file is missing or unparseable the
+// shell renders the preview entry rather than unstyled (§1).
 QtObject {
     id: root
 
-    readonly property var palettes: [
-        { id: "ariadne",     bg: "#0b100e", fg: "#e9f2ef", accent: "#14b88f", critical: "#e5534b", success: "#3fb950" },
-        { id: "e-ink",       bg: "#f2f1ec", fg: "#1a1a18", accent: "#3a3a38", critical: "#8c2f26", success: "#2f6b3a" },
-        { id: "tokyo-night", bg: "#1a1b26", fg: "#c0caf5", accent: "#7aa2f7", critical: "#f7768e", success: "#9ece6a" },
-        { id: "rose-pine",   bg: "#191724", fg: "#e0def4", accent: "#ebbcba", critical: "#eb6f92", success: "#31748f" },
-        { id: "gruvbox",     bg: "#282828", fg: "#ebdbb2", accent: "#d79921", critical: "#cc241d", success: "#98971a" },
-        { id: "nord",        bg: "#2e3440", fg: "#eceff4", accent: "#88c0d0", critical: "#bf616a", success: "#a3be8c" }
-    ]
+    readonly property var palettes: ThemePreviews.list
+    readonly property string tokensPath: Quickshell.env("HOME") + "/.config/quickshell-starlite/tokens.json"
 
     property string current: "ariadne"
+    property bool applying: false
+    property string error: ""
 
-    readonly property var active: {
-        for (var i = 0; i < palettes.length; i++)
-            if (palettes[i].id === current) return palettes[i]
+    function byId(id) {
+        for (var i = 0; i < palettes.length; i++) if (palettes[i].id === id) return palettes[i]
         return palettes[0]
     }
+    readonly property var preview: byId(current)
 
-    function set(id) {
+    // ---- the token file wallust writes ----
+    property var _file: FileView {
+        path: root.tokensPath
+        onLoaded: root._syncCurrentFromFile()
+        onLoadFailed: function (err) { /* fallback palette stays in force */ }
+        JsonAdapter {
+            id: tok
+            property string background: ""
+            property string foreground: ""
+            property string accent: ""
+            property string critical: ""
+            property string success: ""
+        }
+    }
+    readonly property bool fileValid: !Sys.Env.mock && _file.loaded && tok.background !== "" && tok.foreground !== ""
+
+    // What Tokens.qml consumes: five colours. Strings are fine for `color` props.
+    readonly property var active: fileValid
+        ? ({ bg: tok.background, fg: tok.foreground, accent: tok.accent || preview.accent,
+             critical: tok.critical || preview.critical, success: tok.success || preview.success })
+        : ({ bg: preview.bg, fg: preview.fg, accent: preview.accent, critical: preview.critical, success: preview.success })
+
+    // On startup the theme that is active is simply the one on disk (§9): match
+    // the file's background+foreground to a known preview so the grid highlights it.
+    function _syncCurrentFromFile() {
+        if (!fileValid) return
+        var b = String(tok.background).toLowerCase(), f = String(tok.foreground).toLowerCase()
         for (var i = 0; i < palettes.length; i++)
-            if (palettes[i].id === id) { current = id; return true }
-        return false
+            if (String(palettes[i].bg).toLowerCase() === b && String(palettes[i].fg).toLowerCase() === f) { current = palettes[i].id; return }
+    }
+
+    // ---- applying (§4): shell runs wallust, waits for exit, then reloads ----
+    property string _pendingId: ""
+    property var _apply: Process {
+        stdout: StdioCollector {}
+        stderr: StdioCollector { id: applyErr }
+        onExited: function (code) {
+            root.applying = false
+            if (code === 0) {
+                root.current = root._pendingId
+                root.error = ""
+                root._file.reload()
+            } else {
+                var msg = String(applyErr.text).trim().split("\n").pop() || ("exit " + code)
+                root.error = "Theme failed: " + msg.substring(0, 80)
+            }
+            root._pendingId = ""
+        }
+    }
+    function _quote(s) { return "'" + String(s).replace(/'/g, "'\\''") + "'" }
+    function set(id) {
+        var p = null
+        for (var i = 0; i < palettes.length; i++) if (palettes[i].id === id) p = palettes[i]
+        if (!p) return false
+        if (Sys.Env.mock) { current = id; return true }
+        if (applying) return false
+        var cmd = []
+        for (var j = 0; j < p.cmd.length; j++) cmd.push(_quote(p.cmd[j]))
+        _pendingId = id; applying = true; error = ""
+        _apply.command = ["sh", "-c", "export PATH=\"$HOME/.local/bin:$PATH\"; " + cmd.join(" ") + " && starlite-theme-post"]
+        _apply.running = true
+        return true
     }
     function names() {
         var out = []

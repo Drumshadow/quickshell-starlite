@@ -97,6 +97,9 @@ inactiveForeground={s(ink_dim)}
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
 tmp = OUT + ".tmp"
 open(tmp, "w").write("\n".join(parts)); os.replace(tmp, OUT)
-r = subprocess.run(["plasma-apply-colorscheme", OUT], capture_output=True, text=True)
+env = dict(os.environ)
+if not env.get("WAYLAND_DISPLAY") and not env.get("DISPLAY"):
+    env["QT_QPA_PLATFORM"] = "offscreen"      # from a bare SSH shell: apply still needs a QPA
+r = subprocess.run(["plasma-apply-colorscheme", OUT], capture_output=True, text=True, env=env)
 print(r.stdout.strip() or r.stderr.strip())
 sys.exit(r.returncode)
