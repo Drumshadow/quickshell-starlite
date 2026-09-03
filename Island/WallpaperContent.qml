@@ -4,18 +4,24 @@ import "../Config"
 import "../Icons"
 import "../Services" as Sys
 
-// Wallpaper picker. On Plasma this needs NO wallpaper daemon —
+// Wallpaper picker. On Plasma this needs NO wallpaper daemon --
 // plasma-apply-wallpaperimage owns it, which removes a dependency rather than
 // adding one, and makes persistence free (docs/quickshell-wallpaper.md §2).
+//
+// Thumbnails (§5): GridView so only visible delegates exist, sourceSize so the
+// decoder works small, asynchronous so the UI thread never waits, and a
+// placeholder tile that keeps its size so the grid never reflows as images land.
 Item {
     id: root
     implicitWidth: Tokens.fontSize * 22
     implicitHeight: col.implicitHeight
 
-    // sourceSize is mandatory: without it QML decodes each full-resolution image
-    // and then scales it down to draw a 100px thumbnail (§5)
-    readonly property int thumbW: 104
-    readonly property int thumbH: 58
+    readonly property int cols: 3
+    readonly property int gap: Sys.InputMode.gutter
+    readonly property int cellW: Math.floor((width - gap * (cols - 1)) / cols)
+    readonly property int thumbW: cellW
+    readonly property int thumbH: Math.round(cellW * 9 / 16)
+    readonly property int visibleRows: 3
 
     Column {
         id: col
@@ -24,36 +30,83 @@ Item {
 
         Row {
             width: parent.width
-            Text { text: "Wallpaper"; color: Tokens.ink
+            height: Sys.InputMode.touchTarget
+            Text { anchors.verticalCenter: parent.verticalCenter
+                   text: "Wallpaper"; color: Tokens.ink
                    font.pixelSize: Tokens.fontSize; font.bold: true }
-            Item { width: parent.width - 160; height: 1 }
-            Text { text: Sys.Wallpaper.collection; color: Tokens.inkDim
-                   font.pixelSize: Tokens.fontSize * 0.7 }
+            Item { width: parent.width - 100 - collBtn.width; height: 1 }
+            // collection selector (§4): tap cycles; the label is the touch target
+            Rectangle {
+                id: collBtn
+                anchors.verticalCenter: parent.verticalCenter
+                width: collLabel.implicitWidth + Tokens.fontSize * 1.4
+                height: Sys.InputMode.touchTarget - 8
+                radius: Tokens.radius
+                color: collPress.pressed ? Tokens.outline : Tokens.surfaceVariant
+                visible: Sys.Wallpaper.available
+                Row {
+                    anchors.centerIn: parent
+                    spacing: 6
+                    Text { id: collLabel; text: Sys.Wallpaper.collection + "  ·  " + Sys.Wallpaper.count
+                           color: Tokens.ink; font.pixelSize: Tokens.fontSize * 0.7 }
+                    Glyph { anchors.verticalCenter: parent.verticalCenter
+                            width: 11; height: 11; path: Paths.chevronR; ink: Tokens.inkDim }
+                }
+                MouseArea { id: collPress; anchors.fill: parent; onClicked: Sys.Wallpaper.nextCollection() }
+            }
         }
 
-        Grid {
+        Text {
+            visible: Sys.Wallpaper.applying || Sys.Wallpaper.error !== ""
+            text: Sys.Wallpaper.applying ? "Applying…" : Sys.Wallpaper.error
+            color: Sys.Wallpaper.error !== "" ? Tokens.critical : Tokens.inkDim
+            font.pixelSize: Tokens.fontSize * 0.65
+        }
+
+        GridView {
+            id: grid
             width: parent.width
-            columns: 3
-            spacing: Sys.InputMode.gutter
+            height: Math.min(root.visibleRows, Math.ceil(Sys.Wallpaper.count / root.cols)) * (root.thumbH + root.gap)
             visible: Sys.Wallpaper.count > 0
-            Repeater {
-                model: Sys.Wallpaper.items
-                delegate: Rectangle {
-                    required property var modelData
+            clip: true
+            model: Sys.Wallpaper.items
+            cellWidth: root.cellW + root.gap
+            cellHeight: root.thumbH + root.gap
+            cacheBuffer: root.thumbH * 2          // modest on this hardware (§5)
+            boundsBehavior: Flickable.StopAtBounds
+            delegate: Item {
+                required property var modelData
+                width: grid.cellWidth; height: grid.cellHeight
+                Rectangle {
+                    id: tile
                     width: root.thumbW; height: root.thumbH
                     radius: Tokens.radius
-                    color: Tokens.surfaceVariant
-                    border.width: Sys.Wallpaper.current === modelData ? 2 : 0
-                    border.color: Tokens.accent
+                    color: Tokens.surfaceVariant          // placeholder until the image lands
+                    clip: true
+                    readonly property bool isCurrent: Sys.Wallpaper.current === modelData.path
                     Image {
-                        anchors.fill: parent; anchors.margins: 2
-                        source: "file://" + modelData
-                        sourceSize.width: root.thumbW
-                        sourceSize.height: root.thumbH
+                        anchors.fill: parent
+                        source: "file://" + modelData.path
+                        sourceSize.width: root.thumbW * 2      // 2x for the 1.4 scale factor
+                        sourceSize.height: root.thumbH * 2
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true
+                        opacity: status === Image.Ready ? 1 : 0
+                        Behavior on opacity { NumberAnimation { duration: 160 } }
                     }
-                    MouseArea { anchors.fill: parent; onClicked: Sys.Wallpaper.apply(modelData) }
+                    // accent ring on the current wallpaper (§2: read back from Plasma)
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: parent.radius
+                        color: "transparent"
+                        border.width: tile.isCurrent ? 3 : 0
+                        border.color: Tokens.accent
+                    }
+                    Rectangle {   // press feedback
+                        anchors.fill: parent; radius: parent.radius
+                        color: Tokens.ink; opacity: tilePress.pressed ? 0.18 : 0
+                    }
+                    MouseArea { id: tilePress; anchors.fill: parent; onClicked: Sys.Wallpaper.apply(modelData.path) }
                 }
             }
         }
@@ -66,7 +119,7 @@ Item {
             spacing: 6
             Text { text: "No wallpapers found"; color: Tokens.ink
                    font.pixelSize: Tokens.fontSize * 0.8 }
-            Text { text: "Add images to " + Sys.Wallpaper.root
+            Text { text: "Add images to " + Sys.Wallpaper.root + "/<collection>/"
                    color: Tokens.inkDim; font.pixelSize: Tokens.fontSize * 0.65 }
         }
     }

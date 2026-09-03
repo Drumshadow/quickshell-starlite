@@ -85,6 +85,13 @@ PanelWindow {
         function close(): void  { if (IslandState.current === "launcher") IslandState.release() }
     }
 
+    // theming §4: reload the token file after an external `wallust theme`
+    IpcHandler {
+        target: "theme"
+        function reload(): void { Themes.reload() }
+        function set(id: string): void { Themes.set(id) }
+    }
+
     // ---- IPC: one target, per island-core §9 -------------------------------
     IpcHandler {
         target: "island"
@@ -153,6 +160,11 @@ PanelWindow {
             for (var i = 0; i < l.length; i++) out.push(Sys.Audio.sinkLabel(l[i]) + (Sys.Audio.isDefaultSink(l[i]) ? "*" : ""))
             return out.join(",")
         }
+        function wallpapers(): string {
+            return "count=" + Sys.Wallpaper.all.length + " collections=" + Sys.Wallpaper.collections.join("/")
+                 + " current=" + Sys.Wallpaper.current + (Sys.Wallpaper.error !== "" ? " error=" + Sys.Wallpaper.error : "")
+        }
+        function wallpaper(path: string): void { Sys.Wallpaper.apply(path) }
         // Milestone C backends, drivable without a finger
         function night(): void { Sys.NightLight.toggle() }
         function peace(): void { Sys.Notifications.setPeace(!Sys.Notifications.peaceMode) }

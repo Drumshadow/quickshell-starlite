@@ -95,6 +95,9 @@ QtObject {
         _apply.running = true
         return true
     }
+    // theming §4 secondary path: something outside the shell ran wallust
+    // (`wallust theme X && qs ipc -c ~/quickshell-starlite call theme reload`)
+    function reload() { if (!Sys.Env.mock) _file.reload() }
     function names() {
         var out = []
         for (var i = 0; i < palettes.length; i++) out.push(palettes[i].id)

@@ -1,0 +1,45 @@
+#!/usr/bin/env python3
+"""Wallpaper library scan for the island picker (wallpaper §4). Prints one JSON
+array: [{path, collection, name}]. Collections are ~/Pictures/wallpapers/<name>/
+(one folder per theme, as the spec lays out) plus "plasma": the largest landscape
+image of every package under /usr/share/wallpapers. `--current` prints the path
+Plasma has set on the first desktop containment (read back, never guessed)."""
+import os, re, sys, json, glob
+
+def current():
+    rc = os.path.expanduser("~/.config/plasma-org.kde.plasma.desktop-appletsrc")
+    try: lines = open(rc).read().splitlines()
+    except OSError: return ""
+    grp = ""
+    for ln in lines:
+        if ln.startswith("["): grp = ln
+        elif ln.startswith("Image=") and "[Wallpaper][org.kde.image][General]" in grp:
+            v = ln[6:].strip()
+            if v.startswith("file://"): v = v[7:]
+            return v
+    return ""
+
+def scan():
+    out = []
+    root = os.path.expanduser("~/Pictures/wallpapers")
+    if os.path.isdir(root):
+        for coll in sorted(os.listdir(root)):
+            d = os.path.join(root, coll)
+            if not os.path.isdir(d): continue
+            for f in sorted(os.listdir(d)):
+                if f.lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
+                    out.append({"path": os.path.join(d, f), "collection": coll, "name": os.path.splitext(f)[0]})
+    sysd = "/usr/share/wallpapers"
+    if os.path.isdir(sysd):
+        for pkg in sorted(os.listdir(sysd), key=str.lower):
+            imgs = os.path.join(sysd, pkg, "contents", "images")
+            if not os.path.isdir(imgs): continue
+            best, bw = None, 0
+            for f in os.listdir(imgs):
+                m = re.match(r"(\d+)x(\d+)\.", f)
+                if m and int(m.group(1)) >= int(m.group(2)) and int(m.group(1)) > bw: bw, best = int(m.group(1)), f
+            if best: out.append({"path": os.path.join(imgs, best), "collection": "plasma", "name": pkg})
+    return out
+
+if "--current" in sys.argv: print(current())
+else: print(json.dumps(scan()))

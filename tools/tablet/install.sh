@@ -6,5 +6,5 @@ mkdir -p ~/.config/wallust/templates ~/.config/wallust/colorschemes ~/.config/qu
 cp "$D/wallust/wallust.toml" ~/.config/wallust/wallust.toml
 cp "$D/wallust/templates/"* ~/.config/wallust/templates/
 cp "$D/wallust/colorschemes/"* ~/.config/wallust/colorschemes/
-install -m755 "$D/starlite-theme-post" "$D/starlite-theme-previews" ~/.local/bin/
+install -m755 "$D/starlite-theme-post" "$D/starlite-theme-previews" "$D/starlite-wallpapers" ~/.local/bin/
 echo "installed: wallust config, templates, ariadne colourscheme, starlite-theme-post, starlite-theme-previews"

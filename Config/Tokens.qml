@@ -11,11 +11,22 @@ QtObject {
     // Sourced from the palette registry today; wallust replaces this with a
     // generated file later (docs/quickshell-theming.md §1). Either way it is
     // FOUR colours in, and everything else derives.
-    readonly property color background: Themes.active.bg
-    readonly property color foreground: Themes.active.fg
-    readonly property color accentIn:   Themes.active.accent
-    readonly property color criticalIn: Themes.active.critical
-    readonly property color successIn:  Themes.active.success
+    // Writable (not readonly) so a Behavior can cross-fade them (theming §6);
+    // every derived token below follows per frame. `animate` stays false for
+    // the first moments so startup never fades in from a default colour.
+    property color background: Themes.active.bg
+    property color foreground: Themes.active.fg
+    property color accentIn:   Themes.active.accent
+    property color criticalIn: Themes.active.critical
+    property color successIn:  Themes.active.success
+
+    property bool animate: false
+    property var _arm: Timer { interval: 1500; running: true; repeat: false; onTriggered: root.animate = true }
+    Behavior on background { enabled: root.animate; ColorAnimation { duration: 320; easing.type: Easing.OutCubic } }
+    Behavior on foreground { enabled: root.animate; ColorAnimation { duration: 320; easing.type: Easing.OutCubic } }
+    Behavior on accentIn   { enabled: root.animate; ColorAnimation { duration: 320; easing.type: Easing.OutCubic } }
+    Behavior on criticalIn { enabled: root.animate; ColorAnimation { duration: 320; easing.type: Easing.OutCubic } }
+    Behavior on successIn  { enabled: root.animate; ColorAnimation { duration: 320; easing.type: Easing.OutCubic } }
 
     // ---- colour maths ----
     function _lin(v) { return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4) }
