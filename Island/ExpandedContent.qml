@@ -20,7 +20,9 @@ Item {
     property int wifiBars: Sys.Network.strength
     property bool wifiConnected: Sys.Network.connected
 
-    implicitWidth: Tokens.fontSize * 22
+    // wide enough for grabber + media + clock + capsule without the capsule
+    // overrunning the pill's rounded end
+    implicitWidth: Tokens.fontSize * 25.5
     implicitHeight: Tokens.fontSize * 3.4
 
     Row {
