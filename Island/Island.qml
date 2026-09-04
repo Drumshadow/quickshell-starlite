@@ -240,6 +240,10 @@ PanelWindow {
         Loader {
             id: loader
             anchors.centerIn: parent
+            // above the island's tap-to-toggle MouseArea (declared later, so it
+            // would otherwise sit on top and swallow every tap on the content --
+            // the expanded pill's grabber was unreachable: Stephen, 2026-09-03)
+            z: 1
             source: {
                 switch (IslandState.current) {
                 case "expanded": return "ExpandedContent.qml"
