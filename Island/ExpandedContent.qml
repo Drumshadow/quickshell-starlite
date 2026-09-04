@@ -26,11 +26,38 @@ Item {
     Row {
         anchors.fill: parent
         anchors.margins: Tokens.fontSize * 0.6
-        spacing: Tokens.fontSize
+        spacing: Tokens.fontSize * 0.8
+
+        // grabber -- the all-tap path to `control` (island-core §9.1 mechanism 3).
+        // Not decoration: it is what makes the shell reachable without the drag.
+        // A full touch-target button on the left of the pill; the old 16x10 px
+        // chevron under the date was unfindable by finger (Stephen, 2026-09-03).
+        Rectangle {
+            id: grabber
+            anchors.verticalCenter: parent.verticalCenter
+            width: Math.max(40, Sys.InputMode.touchTarget - 6)
+            height: width
+            radius: width / 2
+            color: grabPress.pressed ? Tokens.accent : Tokens.surfaceVariant
+            Behavior on color { ColorAnimation { duration: 60 } }
+            Glyph {
+                anchors.centerIn: parent
+                width: parent.width * 0.42; height: parent.width * 0.42
+                path: Paths.chevronR
+                rotation: 90
+                ink: grabPress.pressed ? Tokens.inkOnAccent : Tokens.ink
+            }
+            MouseArea {
+                id: grabPress
+                anchors.fill: parent
+                anchors.margins: -6
+                onClicked: IslandState.request("control")
+            }
+        }
 
         // left: media
         Column {
-            width: parent.width * 0.32
+            width: parent.width * 0.26
             anchors.verticalCenter: parent.verticalCenter
             Text {
                 text: root.title; color: Tokens.ink
@@ -86,19 +113,4 @@ Item {
         }
     }
 
-    // grabber — the all-tap path to `control` (island-core §9.1 mechanism 3).
-    // Not decoration: it is what makes the shell reachable without the drag.
-    Glyph {
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottom: parent.bottom
-        width: Tokens.fontSize; height: Tokens.fontSize * 0.6
-        path: Paths.chevronR
-        ink: Tokens.inkDim
-        rotation: 90
-        MouseArea {
-            anchors.fill: parent
-            anchors.margins: -Sys.InputMode.touchTarget / 3
-            onClicked: IslandState.request("control")
-        }
-    }
 }
